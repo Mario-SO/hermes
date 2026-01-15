@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  GITHUB_ORG: tui-company  # Update to your GitHub org
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+          - os: macos-latest
+            platform: darwin
+            arch: aarch64
+          # Add more targets as needed:
+          # - os: macos-13
+          #   platform: darwin
+          #   arch: x86_64
+          # - os: windows-latest
+          #   platform: windows
+          #   arch: x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Read engine versions
+        id: engines
+        run: |
+          echo "zenc=$(jq -r .zenc engine-versions.json)" >> $GITHUB_OUTPUT
+          echo "zend=$(jq -r .zend engine-versions.json)" >> $GITHUB_OUTPUT
+
+      - name: Download zenc
+        run: |
+          mkdir -p bin
+          ARTIFACT="zenc-${{ steps.engines.outputs.zenc }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          if [[ "${{ matrix.platform }}" == "windows" ]]; then
+            ARTIFACT="${ARTIFACT}.exe"
+          fi
+          curl -fsSL -o "bin/zenc${{ matrix.platform == 'windows' && '.exe' || '' }}" \
+            "https://github.com/${{ env.GITHUB_ORG }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/${ARTIFACT}"
+          chmod +x bin/zenc* 2>/dev/null || true
+
+      - name: Download zend
+        run: |
+          ARTIFACT="zend-${{ steps.engines.outputs.zend }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          if [[ "${{ matrix.platform }}" == "windows" ]]; then
+            ARTIFACT="${ARTIFACT}.exe"
+          fi
+          curl -fsSL -o "bin/zend${{ matrix.platform == 'windows' && '.exe' || '' }}" \
+            "https://github.com/${{ env.GITHUB_ORG }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/${ARTIFACT}"
+          chmod +x bin/zend* 2>/dev/null || true
+
+      - name: Verify checksums
+        run: |
+          # Download checksums
+          curl -fsSL -o zenc-checksums.txt \
+            "https://github.com/${{ env.GITHUB_ORG }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/SHA256SUMS"
+          curl -fsSL -o zend-checksums.txt \
+            "https://github.com/${{ env.GITHUB_ORG }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/SHA256SUMS"
+
+          # Verify zenc
+          ZENC_ARTIFACT="zenc-${{ steps.engines.outputs.zenc }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          if [[ "${{ matrix.platform }}" == "windows" ]]; then
+            ZENC_ARTIFACT="${ZENC_ARTIFACT}.exe"
+          fi
+          EXPECTED_ZENC=$(grep "${ZENC_ARTIFACT}" zenc-checksums.txt | awk '{print $1}')
+          ACTUAL_ZENC=$(sha256sum bin/zenc* | awk '{print $1}')
+          if [[ "$EXPECTED_ZENC" != "$ACTUAL_ZENC" ]]; then
+            echo "zenc checksum mismatch!"
+            echo "Expected: $EXPECTED_ZENC"
+            echo "Actual: $ACTUAL_ZENC"
+            exit 1
+          fi
+          echo "zenc checksum verified"
+
+          # Verify zend
+          ZEND_ARTIFACT="zend-${{ steps.engines.outputs.zend }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          if [[ "${{ matrix.platform }}" == "windows" ]]; then
+            ZEND_ARTIFACT="${ZEND_ARTIFACT}.exe"
+          fi
+          EXPECTED_ZEND=$(grep "${ZEND_ARTIFACT}" zend-checksums.txt | awk '{print $1}')
+          ACTUAL_ZEND=$(sha256sum bin/zend* | awk '{print $1}')
+          if [[ "$EXPECTED_ZEND" != "$ACTUAL_ZEND" ]]; then
+            echo "zend checksum mismatch!"
+            echo "Expected: $EXPECTED_ZEND"
+            echo "Actual: $ACTUAL_ZEND"
+            exit 1
+          fi
+          echo "zend checksum verified"
+
+      - name: Get version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create release artifact
+        run: |
+          mkdir -p dist
+          ARTIFACT_NAME="hermes-${{ steps.version.outputs.version }}-${{ matrix.platform }}-${{ matrix.arch }}"
+          # Create tarball with hermes + embedded binaries
+          tar -czvf "dist/${ARTIFACT_NAME}.tar.gz" \
+            --exclude='node_modules' \
+            --exclude='*.tsbuildinfo' \
+            --exclude='.git' \
+            .
+
+      - name: Generate checksum
+        run: |
+          cd dist
+          sha256sum *.tar.gz > SHA256SUMS
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hermes-${{ matrix.platform }}-${{ matrix.arch }}
+          path: dist/
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Combine checksums
+        run: |
+          mkdir -p release
+          # Move all tarballs to release dir
+          for dir in artifacts/*/; do
+            cp "$dir"/*.tar.gz release/ 2>/dev/null || true
+          done
+          # Combine all SHA256SUMS into one
+          cat artifacts/*/SHA256SUMS > release/SHA256SUMS
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release/*
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

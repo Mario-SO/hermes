@@ -1,0 +1,26 @@
+{
+	"name": "@tuis/hermes",
+	"description": "Hermes is a terminal UI for P2P file sharing",
+	"version": "0.0.1",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run --watch src/app/index.tsx",
+		"check": "bunx biome check --write . && bunx biome format --write . && bunx biome lint . && bunx tsc --noEmit"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.11",
+		"@types/bun": "latest",
+		"@types/react": "19.2.8"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@opentui/core": "^0.1.73",
+		"@opentui/react": "^0.1.73",
+		"effect": "^3.19.14",
+		"react": "^19.2.3"
+	}
+}
