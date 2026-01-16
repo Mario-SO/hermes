@@ -1,8 +1,13 @@
 import { setModalCommandHandlers } from "@app/commands/context";
-import { closeModal, useModalState } from "@features/overlays/modalState";
-import { updatePeer } from "@features/peers/peersState";
+import {
+	closeModal,
+	openErrorModal,
+	useModalState,
+} from "@features/overlays/modalState";
+import { getPeersState, trustPeerWithZend } from "@features/peers/peersState";
 import { useTheme } from "@features/theme/themeState";
 import { ModalFrame } from "@shared/components/ModalFrame";
+import { parseEd25519PublicKey } from "@shared/crypto";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
 import type { Peer } from "@shared/types";
 import { Effect } from "effect";
@@ -16,6 +21,13 @@ export function TrustPeerModal() {
 	const ui = useTheme().ui;
 	const modalState = useModalState();
 	const peer = modalState.data as Peer | undefined;
+	const isTrusted = peer?.trustLevel === "trusted";
+	const fingerprint =
+		peer?.fingerprint ||
+		(peer?.publicKey
+			? parseEd25519PublicKey(peer.publicKey)?.fingerprint
+			: null) ||
+		"Unknown";
 
 	const { width, height } = useModalDimensions({
 		minWidth: 50,
@@ -28,9 +40,23 @@ export function TrustPeerModal() {
 
 	const handleConfirm = useCallback(() => {
 		if (!peer) return;
-		Effect.runSync(updatePeer(peer.id, { trustLevel: "trusted" }));
-		Effect.runSync(closeModal);
-	}, [peer]);
+		if (isTrusted) {
+			Effect.runSync(closeModal);
+			return;
+		}
+
+		void Effect.runPromise(
+			trustPeerWithZend(peer).pipe(
+				Effect.flatMap((result) => {
+					if (!result) {
+						const message = getPeersState().error ?? "Failed to trust peer.";
+						return openErrorModal(message);
+					}
+					return closeModal;
+				}),
+			),
+		);
+	}, [peer, isTrusted]);
 
 	const handleCancel = useCallback(() => {
 		Effect.runSync(closeModal);
@@ -49,16 +75,31 @@ export function TrustPeerModal() {
 	if (!peer) return null;
 
 	return (
-		<ModalFrame width={width} height={height} title="Trust Peer?">
-			<text fg={ui.warning}>⚠ First-time connection</text>
+		<ModalFrame width={width} height={height} title="Trust Peer">
+			<text fg={isTrusted ? ui.info : ui.warning}>
+				{isTrusted ? "Verify trusted peer" : "⚠ First-time connection"}
+			</text>
 			<box style={{ height: 1 }} />
 
-			<text fg={ui.foregroundDim}>
-				You are about to trust this peer. Verify their fingerprint
-			</text>
-			<text fg={ui.foregroundDim}>
-				matches what they shared with you out-of-band.
-			</text>
+			{isTrusted ? (
+				<>
+					<text fg={ui.foregroundDim}>
+						Review the peer fingerprint for any unexpected changes.
+					</text>
+					<text fg={ui.foregroundDim}>
+						If it differs, remove the peer and re-add it.
+					</text>
+				</>
+			) : (
+				<>
+					<text fg={ui.foregroundDim}>
+						You are about to trust this peer. Verify their fingerprint
+					</text>
+					<text fg={ui.foregroundDim}>
+						matches what they shared with you out-of-band.
+					</text>
+				</>
+			)}
 			<box style={{ height: 1 }} />
 
 			<text fg={ui.foregroundDim}>Peer: </text>
@@ -66,16 +107,14 @@ export function TrustPeerModal() {
 			<box style={{ height: 1 }} />
 
 			<text fg={ui.foregroundDim}>Fingerprint:</text>
-			<text fg={ui.accent}>
-				{formatFingerprint(peer.fingerprint || "Unknown")}
-			</text>
+			<text fg={ui.accent}>{formatFingerprint(fingerprint)}</text>
 
 			<box style={{ flexGrow: 1 }} />
 
 			{/* Footer hints */}
 			<box style={{ flexDirection: "row" }}>
 				<text fg={ui.success}>Enter</text>
-				<text fg={ui.foreground}> Trust </text>
+				<text fg={ui.foreground}>{isTrusted ? " Close " : " Trust "}</text>
 				<text fg={ui.foregroundDim}>Esc</text>
 				<text fg={ui.foreground}> Cancel</text>
 			</box>

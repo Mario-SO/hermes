@@ -75,6 +75,12 @@ export type ZendPeerRemovedEvent = {
 	name: string;
 };
 
+export type ZendPeerTrustUpdatedEvent = {
+	event: "peer_trust_updated";
+	name: string;
+	trust: "trusted" | "blocked" | "untrusted";
+};
+
 export type ZendPeerListEvent = {
 	event: "peer_list";
 	peers: Array<{
@@ -82,12 +88,14 @@ export type ZendPeerListEvent = {
 		public_key: string;
 		address: string;
 		fingerprint: string;
+		trust: "trusted" | "blocked" | "untrusted";
 	}>;
 };
 
 export type ZendPeerEvent =
 	| ZendPeerAddedEvent
 	| ZendPeerRemovedEvent
+	| ZendPeerTrustUpdatedEvent
 	| ZendPeerListEvent;
 
 // Connection events
@@ -195,6 +203,7 @@ export type ZendCommand =
 	| { command: "id_show" }
 	| { command: "peer_add"; name: string; publicKey: string; address: string }
 	| { command: "peer_remove"; name: string }
+	| { command: "peer_trust"; name: string; trust: "trusted" | "blocked" }
 	| { command: "peer_list" }
 	| { command: "send"; filePath: string; peerName: string }
 	| { command: "receive_start"; port?: number }

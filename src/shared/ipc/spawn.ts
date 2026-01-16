@@ -117,27 +117,69 @@ export const spawnAndCollect = <T>(
 				),
 		});
 
-		// Parse JSON lines from stdout
+		// Parse JSON from stdout (NDJSON or single multi-line JSON object)
 		const events: T[] = [];
 		const lines = stdoutText.split("\n").filter((line) => line.trim());
+		let lineParseFailed = false;
+		let failedLine = "";
 
 		for (const line of lines) {
 			try {
 				const parsed = JSON.parse(line) as T;
 				events.push(parsed);
-			} catch (error) {
-				return yield* Effect.fail(
-					new JsonParseError(
-						options.binary,
-						line,
-						error instanceof Error ? error.message : String(error),
-					),
-				);
+			} catch {
+				lineParseFailed = true;
+				failedLine = line;
+				break;
+			}
+		}
+
+		if (lineParseFailed) {
+			const trimmed = stdoutText.trim();
+			if (trimmed) {
+				try {
+					const parsed = JSON.parse(trimmed) as T | T[];
+					if (Array.isArray(parsed)) {
+						events.push(...parsed);
+					} else {
+						events.push(parsed);
+					}
+				} catch (error) {
+					return yield* Effect.fail(
+						new JsonParseError(
+							options.binary,
+							failedLine || trimmed,
+							error instanceof Error ? error.message : String(error),
+						),
+					);
+				}
 			}
 		}
 
 		// Check for error events in stderr (if JSON) or return error on non-zero exit
 		if (exitCode !== 0) {
+			const stdoutError = events.find((event) => {
+				const candidate = event as {
+					event?: string;
+					code?: string;
+					message?: string;
+				};
+				return candidate.event === "error";
+			});
+			if (stdoutError) {
+				const candidate = stdoutError as {
+					code?: string;
+					message?: string;
+				};
+				return yield* Effect.fail(
+					new BinaryExecutionError(
+						options.binary,
+						candidate.code ?? "unknown",
+						candidate.message ?? "Unknown error",
+					),
+				);
+			}
+
 			// Try to parse stderr as JSON error
 			const stderrLines = stderrText.split("\n").filter((line) => line.trim());
 			for (const line of stderrLines) {

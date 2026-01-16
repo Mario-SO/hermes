@@ -1,3 +1,5 @@
+import { zend } from "@shared/ipc";
+import type { PeerInfo } from "@shared/ipc/zendService";
 import {
 	createSubscriptionRef,
 	getSubscriptionValue,
@@ -44,6 +46,9 @@ export const setPeers = (peers: Peer[]) =>
 		yield* SubscriptionRef.update(peersStateRef, (state) => ({
 			...state,
 			peers,
+			selectedPeerId: peers.some((peer) => peer.id === state.selectedPeerId)
+				? state.selectedPeerId
+				: (peers[0]?.id ?? null),
 			isLoading: false,
 			error: null,
 		}));
@@ -135,3 +140,120 @@ export function getSelectedPeer(): Peer | undefined {
 	const state = getPeersState();
 	return state.peers.find((p) => p.id === state.selectedPeerId);
 }
+
+const formatPeersError = (error: unknown): string =>
+	error instanceof Error ? error.message : JSON.stringify(error);
+
+const mapZendPeer = (peer: PeerInfo): Peer => ({
+	id: peer.name,
+	address: peer.address,
+	publicKey: peer.publicKey,
+	fingerprint: peer.fingerprint,
+	label: peer.name,
+	trustLevel: peer.trust === "blocked" ? "blocked" : "trusted",
+});
+
+const refreshPeersFromZend = Effect.gen(function* () {
+	const peers = yield* zend.listPeers;
+	yield* setPeers(peers.map(mapZendPeer));
+});
+
+export const loadPeersFromZend = Effect.gen(function* () {
+	yield* setPeersLoading(true);
+
+	yield* refreshPeersFromZend.pipe(
+		Effect.catchAll((error) =>
+			Effect.gen(function* () {
+				yield* setPeersError(formatPeersError(error));
+			}),
+		),
+	);
+});
+
+export const addPeerWithZend = (
+	name: string,
+	publicKey: string,
+	address: string,
+) =>
+	Effect.gen(function* () {
+		yield* setPeersLoading(true);
+
+		const result = yield* zend.addPeer(name, publicKey, address).pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+					return null;
+				}),
+			),
+		);
+
+		if (!result) return null;
+
+		yield* refreshPeersFromZend.pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+				}),
+			),
+		);
+
+		return result;
+	});
+
+export const removePeerWithZend = (name: string) =>
+	Effect.gen(function* () {
+		yield* setPeersLoading(true);
+
+		const result = yield* zend.removePeer(name).pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+					return null;
+				}),
+			),
+		);
+
+		if (!result) return null;
+
+		yield* refreshPeersFromZend.pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+				}),
+			),
+		);
+
+		return result;
+	});
+
+export const trustPeerWithZend = (peer: Peer) =>
+	addPeerWithZend(peer.id, peer.publicKey, peer.address);
+
+export const setPeerTrustWithZend = (
+	name: string,
+	trust: "trusted" | "blocked",
+) =>
+	Effect.gen(function* () {
+		yield* setPeersLoading(true);
+
+		const result = yield* zend.setPeerTrust(name, trust).pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+					return null;
+				}),
+			),
+		);
+
+		if (!result) return null;
+
+		yield* refreshPeersFromZend.pipe(
+			Effect.catchAll((error) =>
+				Effect.gen(function* () {
+					yield* setPeersError(formatPeersError(error));
+				}),
+			),
+		);
+
+		return result;
+	});

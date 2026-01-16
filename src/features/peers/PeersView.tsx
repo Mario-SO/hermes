@@ -7,23 +7,33 @@ type Props = {
 	height: number;
 };
 
+function clampMessage(message: string, maxLength: number): string {
+	if (message.length <= maxLength) return message;
+	if (maxLength <= 3) return message.slice(0, maxLength);
+	return `${message.slice(0, maxLength - 3)}...`;
+}
+
 export function PeersView({ width, height }: Props) {
 	const ui = useTheme().ui;
 	const { identity } = useIdentityState();
 	const hasIdentity = Boolean(identity);
 	const { peers, selectedPeerId, isLoading, error } = usePeersState();
+	const containerStyle = {
+		width,
+		height,
+		flexDirection: "column",
+		paddingLeft: 2,
+		paddingTop: 1,
+		backgroundColor: ui.background,
+	} as const;
+	const errorLabel = "Error: ";
+	const errorMessage = error
+		? clampMessage(error, Math.max(1, width - 4 - errorLabel.length))
+		: "";
 
 	if (isLoading) {
 		return (
-			<box
-				style={{
-					width,
-					height,
-					flexDirection: "column",
-					paddingLeft: 2,
-					paddingTop: 1,
-				}}
-			>
+			<box style={containerStyle}>
 				<text fg={ui.foreground}>Peers</text>
 				<box style={{ height: 1 }} />
 				<text fg={ui.info}>Loading...</text>
@@ -33,33 +43,20 @@ export function PeersView({ width, height }: Props) {
 
 	if (error) {
 		return (
-			<box
-				style={{
-					width,
-					height,
-					flexDirection: "column",
-					paddingLeft: 2,
-					paddingTop: 1,
-				}}
-			>
+			<box style={containerStyle}>
 				<text fg={ui.foreground}>Peers</text>
 				<box style={{ height: 1 }} />
-				<text fg={ui.error}>Error: {error}</text>
+				<text fg={ui.error}>
+					{errorLabel}
+					{errorMessage}
+				</text>
 			</box>
 		);
 	}
 
 	if (peers.length === 0) {
 		return (
-			<box
-				style={{
-					width,
-					height,
-					flexDirection: "column",
-					paddingLeft: 2,
-					paddingTop: 1,
-				}}
-			>
+			<box style={containerStyle}>
 				<text fg={ui.foreground}>Peers</text>
 				<box style={{ height: 2 }} />
 				<box
@@ -98,21 +95,14 @@ export function PeersView({ width, height }: Props) {
 		);
 	}
 
-	const tableWidth = Math.min(70, width - 4);
+	const tableWidth = Math.min(70, Math.max(0, width - 6));
 	const labelWidth = 20;
 	const addressWidth = 25;
 	const trustWidth = 12;
+	const headerLine = "─".repeat(Math.max(0, tableWidth));
 
 	return (
-		<box
-			style={{
-				width,
-				height,
-				flexDirection: "column",
-				paddingLeft: 2,
-				paddingTop: 1,
-			}}
-		>
+		<box style={containerStyle}>
 			<text fg={ui.foreground}>Peers ({peers.length})</text>
 			<box style={{ height: 1 }} />
 
@@ -131,7 +121,7 @@ export function PeersView({ width, height }: Props) {
 					Trust
 				</text>
 			</box>
-			<text fg={ui.border}>{"─".repeat(tableWidth)}</text>
+			<text fg={ui.border}>{headerLine}</text>
 
 			{/* Table Rows */}
 			{peers.map((peer) => {
@@ -142,6 +132,8 @@ export function PeersView({ width, height }: Props) {
 						: peer.trustLevel === "blocked"
 							? ui.error
 							: ui.warning;
+				const trustLabel =
+					peer.trustLevel === "blocked" ? "untrusted" : peer.trustLevel;
 
 				return (
 					<box
@@ -165,7 +157,7 @@ export function PeersView({ width, height }: Props) {
 							{peer.address.slice(0, addressWidth - 1)}
 						</text>
 						<text fg={trustColor} style={{ width: trustWidth }}>
-							{peer.trustLevel}
+							{trustLabel}
 						</text>
 					</box>
 				);

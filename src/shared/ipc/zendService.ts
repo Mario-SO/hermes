@@ -25,6 +25,7 @@ import {
 	type ZendPeerAddedEvent,
 	type ZendPeerListEvent,
 	type ZendPeerRemovedEvent,
+	type ZendPeerTrustUpdatedEvent,
 	type ZendTransferCompleteEvent,
 } from "./types";
 
@@ -124,6 +125,7 @@ export interface PeerInfo {
 	publicKey: string;
 	address: string;
 	fingerprint: string;
+	trust: "trusted" | "blocked";
 }
 
 export interface AddPeerResult {
@@ -159,7 +161,7 @@ export const addPeer = (
 	});
 
 /**
- * List all trusted peers using zend peer list.
+ * List all peers using zend peer list.
  */
 export const listPeers: Effect.Effect<PeerInfo[], ZendServiceError> =
 	Effect.gen(function* () {
@@ -176,6 +178,10 @@ export const listPeers: Effect.Effect<PeerInfo[], ZendServiceError> =
 			publicKey: p.public_key,
 			address: p.address,
 			fingerprint: p.fingerprint,
+			trust:
+				p.trust === "blocked" || p.trust === "untrusted"
+					? "blocked"
+					: "trusted",
 		}));
 	});
 
@@ -197,6 +203,37 @@ export const removePeer = (
 		);
 
 		return { name: event.name };
+	});
+
+/**
+ * Update a peer trust state using zend peer trust.
+ *
+ * @param name - Name of the peer to update
+ * @param trust - trusted or blocked
+ */
+export const setPeerTrust = (
+	name: string,
+	trust: "trusted" | "blocked",
+): Effect.Effect<
+	{ name: string; trust: "trusted" | "blocked" },
+	ZendServiceError
+> =>
+	Effect.gen(function* () {
+		const event = yield* spawnAndGetFirst<ZendEvent, ZendPeerTrustUpdatedEvent>(
+			{
+				binary: "zend",
+				args: ["peer", "trust", name, trust],
+			},
+			"peer_trust_updated",
+		);
+
+		return {
+			name: event.name,
+			trust:
+				event.trust === "blocked" || event.trust === "untrusted"
+					? "blocked"
+					: "trusted",
+		};
 	});
 
 // =============================================================================
@@ -384,6 +421,7 @@ type CommandResult =
 	| AddPeerResult
 	| PeerInfo[]
 	| { name: string }
+	| { name: string; trust: "trusted" | "blocked" }
 	| SendResult
 	| ReceiveStatus;
 
@@ -407,6 +445,9 @@ export const sendCommand = (
 
 			case "peer_remove":
 				return yield* removePeer(command.name);
+
+			case "peer_trust":
+				return yield* setPeerTrust(command.name, command.trust);
 
 			case "peer_list":
 				return yield* listPeers;
