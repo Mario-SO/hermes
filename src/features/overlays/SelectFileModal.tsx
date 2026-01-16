@@ -4,6 +4,7 @@ import { useTheme } from "@features/theme/themeState";
 import { useKeyboard } from "@opentui/react";
 import { ModalFrame } from "@shared/components/ModalFrame";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
+import { getPrintableKey, type InputKey } from "@shared/keyboard";
 import { Effect } from "effect";
 import { useCallback, useEffect, useState } from "react";
 
@@ -43,7 +44,7 @@ export function SelectFileModal() {
 	}, [handleConfirm, handleCancel]);
 
 	const handleInputKey = useCallback(
-		(key: { name?: string; ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
+		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
 			if (!key.name) return;
 			if (key.ctrl || key.meta || key.alt) return;
 			if (key.name === "tab" || key.name === "return" || key.name === "escape")
@@ -52,10 +53,8 @@ export function SelectFileModal() {
 				setFilePath((value) => value.slice(0, -1));
 				return;
 			}
-			const nextChar = key.name === "space" ? " " : key.name;
-			if (nextChar.length === 1) {
-				setFilePath((value) => value + nextChar);
-			}
+			const nextChar = getPrintableKey(key);
+			if (nextChar) setFilePath((value) => value + nextChar);
 		},
 		[],
 	);

@@ -1,10 +1,15 @@
 import { setModalCommandHandlers } from "@app/commands/context";
-import { closeModal } from "@features/overlays/modalState";
-import { addPeer } from "@features/peers/peersState";
+import {
+	closeModal,
+	openErrorModal,
+	openTrustPeerModal,
+} from "@features/overlays/modalState";
 import { useTheme } from "@features/theme/themeState";
 import { useKeyboard } from "@opentui/react";
 import { ModalFrame } from "@shared/components/ModalFrame";
+import { parseEd25519PublicKey } from "@shared/crypto";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
+import { getPrintableKey, type InputKey } from "@shared/keyboard";
 import type { Peer } from "@shared/types";
 import { Effect } from "effect";
 import { useCallback, useEffect, useState } from "react";
@@ -15,43 +20,71 @@ export function AddPeerModal() {
 		minWidth: 50,
 		widthPercent: 0.5,
 		maxWidthPercent: 0.7,
-		minHeight: 14,
-		heightPercent: 0.4,
+		minHeight: 18,
+		heightPercent: 0.5,
 		maxHeightPercent: 0.5,
 	});
 
 	const [address, setAddress] = useState("");
-	const [label, setLabel] = useState("");
-	const [focusedField, setFocusedField] = useState<"address" | "label">(
-		"address",
-	);
+	const [name, setName] = useState("");
+	const [publicKey, setPublicKey] = useState("");
+	const [focusedField, setFocusedField] = useState<
+		"name" | "address" | "publicKey"
+	>("name");
 
 	const handleConfirm = useCallback(() => {
-		if (!address.trim()) return;
+		const trimmedName = name.trim();
+		const trimmedAddress = address.trim();
+		const parsedKey = parseEd25519PublicKey(publicKey);
+
+		if (!trimmedName || !trimmedAddress || !publicKey.trim()) return;
+		if (!parsedKey) {
+			Effect.runSync(
+				openErrorModal("Public key must be a base64-encoded Ed25519 key."),
+			);
+			return;
+		}
 
 		const newPeer: Peer = {
-			id: `peer-${Date.now()}`,
-			address: address.trim(),
-			publicKey: "", // Will be populated after connection
-			fingerprint: "", // Will be populated after connection
-			label: label.trim() || undefined,
+			id: trimmedName,
+			address: trimmedAddress,
+			publicKey: parsedKey.normalized,
+			fingerprint: parsedKey.fingerprint,
+			label: trimmedName,
 			trustLevel: "pending",
 		};
 
-		Effect.runSync(addPeer(newPeer));
-		Effect.runSync(closeModal);
-	}, [address, label]);
+		Effect.runSync(openTrustPeerModal(newPeer));
+	}, [address, name, publicKey]);
 
 	const handleCancel = useCallback(() => {
 		Effect.runSync(closeModal);
 	}, []);
 
 	const handleNextField = useCallback(() => {
-		setFocusedField((f) => (f === "address" ? "label" : "address"));
+		setFocusedField((field) => {
+			switch (field) {
+				case "name":
+					return "address";
+				case "address":
+					return "publicKey";
+				default:
+					return "name";
+			}
+		});
 	}, []);
 
 	const handlePrevField = useCallback(() => {
-		setFocusedField((f) => (f === "label" ? "address" : "label"));
+		setFocusedField((field) => {
+			switch (field) {
+				case "publicKey":
+					return "address";
+				case "address":
+					return "name";
+				default:
+					return "publicKey";
+			}
+		});
 	}, []);
 
 	useEffect(() => {
@@ -65,7 +98,7 @@ export function AddPeerModal() {
 	}, [handleConfirm, handleCancel, handleNextField, handlePrevField]);
 
 	const handleInputKey = useCallback(
-		(key: { name?: string; ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
+		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
 			if (!key.name) return;
 			if (key.ctrl || key.meta || key.alt) return;
 			if (key.name === "tab" || key.name === "return" || key.name === "escape")
@@ -80,28 +113,46 @@ export function AddPeerModal() {
 					setter(current.slice(0, -1));
 					return;
 				}
-				const nextChar = keyName === "space" ? " " : keyName;
-				if (nextChar.length === 1) {
-					setter(current + nextChar);
-				}
+				const nextChar = getPrintableKey(key);
+				if (nextChar) setter(current + nextChar);
 			};
 
+			if (focusedField === "name") {
+				updateField(name, setName);
+				return;
+			}
 			if (focusedField === "address") {
 				updateField(address, setAddress);
-			} else {
-				updateField(label, setLabel);
+				return;
 			}
+			updateField(publicKey, setPublicKey);
 		},
-		[address, label, focusedField],
+		[address, name, publicKey, focusedField],
 	);
 
 	useKeyboard(handleInputKey);
 
 	return (
 		<ModalFrame width={width} height={height} title="Add Peer">
-			<text fg={ui.foregroundDim}>
-				Enter the peer's address (IP or hostname)
+			<text fg={ui.foregroundDim}>Enter peer details</text>
+			<box style={{ height: 1 }} />
+
+			{/* Name field */}
+			<text fg={focusedField === "name" ? ui.accent : ui.foregroundDim}>
+				Name:
 			</text>
+			<box
+				style={{
+					borderStyle: "single",
+					borderColor: focusedField === "name" ? ui.accent : ui.border,
+					padding: 0,
+					paddingLeft: 1,
+					height: 3,
+				}}
+			>
+				<text fg={ui.foreground}>{name || " "}</text>
+			</box>
+
 			<box style={{ height: 1 }} />
 
 			{/* Address field */}
@@ -122,20 +173,20 @@ export function AddPeerModal() {
 
 			<box style={{ height: 1 }} />
 
-			{/* Label field */}
-			<text fg={focusedField === "label" ? ui.accent : ui.foregroundDim}>
-				Label (optional):
+			{/* Public key field */}
+			<text fg={focusedField === "publicKey" ? ui.accent : ui.foregroundDim}>
+				Public key:
 			</text>
 			<box
 				style={{
 					borderStyle: "single",
-					borderColor: focusedField === "label" ? ui.accent : ui.border,
+					borderColor: focusedField === "publicKey" ? ui.accent : ui.border,
 					padding: 0,
 					paddingLeft: 1,
 					height: 3,
 				}}
 			>
-				<text fg={ui.foreground}>{label || " "}</text>
+				<text fg={ui.foreground}>{publicKey || " "}</text>
 			</box>
 
 			<box style={{ flexGrow: 1 }} />
@@ -145,7 +196,7 @@ export function AddPeerModal() {
 				<text fg={ui.foregroundDim}>Tab</text>
 				<text fg={ui.foreground}> Switch field </text>
 				<text fg={ui.foregroundDim}>Enter</text>
-				<text fg={ui.foreground}> Add </text>
+				<text fg={ui.foreground}> Continue </text>
 				<text fg={ui.foregroundDim}>Esc</text>
 				<text fg={ui.foreground}> Cancel</text>
 			</box>

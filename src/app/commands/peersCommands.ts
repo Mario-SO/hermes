@@ -1,11 +1,12 @@
 import { openModal, openTrustPeerModal } from "@features/overlays/modalState";
+import { showToast } from "@features/overlays/toastState";
 import {
 	getPeersState,
 	getSelectedPeer,
-	removePeer,
+	removePeerWithZend,
 	selectNextPeer,
 	selectPrevPeer,
-	updatePeer,
+	setPeerTrustWithZend,
 } from "@features/peers/peersState";
 import { Effect } from "effect";
 import type { CommandDefinition } from "./types";
@@ -52,10 +53,36 @@ export const peersCommands = [
 				const peer = getSelectedPeer();
 				if (!peer) return;
 				if (peer.trustLevel === "trusted") {
-					yield* updatePeer(peer.id, { trustLevel: "pending" });
-				} else {
-					yield* openTrustPeerModal(peer);
+					const result = yield* setPeerTrustWithZend(peer.id, "blocked");
+					if (!result) {
+						yield* showToast({
+							message: "Failed to update trust.",
+							tone: "error",
+						});
+						return;
+					}
+					yield* showToast({
+						message: "Peer marked untrusted.",
+						tone: "warning",
+					});
+					return;
 				}
+				if (peer.trustLevel === "blocked") {
+					const result = yield* setPeerTrustWithZend(peer.id, "trusted");
+					if (!result) {
+						yield* showToast({
+							message: "Failed to update trust.",
+							tone: "error",
+						});
+						return;
+					}
+					yield* showToast({
+						message: "Peer marked trusted.",
+						tone: "success",
+					});
+					return;
+				}
+				yield* openTrustPeerModal(peer);
 			}),
 	},
 	{
@@ -68,7 +95,7 @@ export const peersCommands = [
 			Effect.gen(function* () {
 				const peer = getSelectedPeer();
 				if (!peer) return;
-				yield* removePeer(peer.id);
+				yield* removePeerWithZend(peer.id);
 			}),
 	},
 	{

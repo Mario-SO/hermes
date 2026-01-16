@@ -4,6 +4,7 @@ import {
 	useSubscriptionValue,
 } from "@shared/store";
 import { Effect, SubscriptionRef } from "effect";
+import type { DurationInput } from "effect/Duration";
 
 export type ToastTone = "success" | "error" | "info" | "warning";
 
@@ -29,7 +30,7 @@ export const setToast = (toast: Toast | null) =>
 
 export const showToast = (
 	toast: Toast,
-	duration: string = "2 seconds",
+	duration: DurationInput = "2 seconds",
 ) =>
 	Effect.gen(function* () {
 		yield* setToast(toast);

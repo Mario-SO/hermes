@@ -122,6 +122,11 @@ export function IdentityView({ width, height }: Props) {
 					<text fg={ui.accent}>{formatFingerprint(identity.fingerprint)}</text>
 					<box style={{ height: 1 }} />
 
+					<text fg={ui.foregroundDim}>Public Key:</text>
+					<box style={{ height: 1 }} />
+					<text fg={ui.accentSecondary}>{identity.publicKey}</text>
+					<box style={{ height: 1 }} />
+
 					<text fg={ui.foregroundDim}>
 						Created: {identity.createdAt.toLocaleDateString()}
 					</text>

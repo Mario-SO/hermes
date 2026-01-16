@@ -12,6 +12,7 @@ import { useNavigationState } from "@features/navigation/navigationState";
 import { ModalHost } from "@features/overlays/ModalHost";
 import { ToastHost } from "@features/overlays/ToastHost";
 import { PeersView } from "@features/peers/PeersView";
+import { loadPeersFromZend } from "@features/peers/peersState";
 import { ReceiveView } from "@features/receive/ReceiveView";
 import { useReceiveState } from "@features/receive/receiveState";
 import { useTheme } from "@features/theme/themeState";
@@ -36,6 +37,7 @@ export function App() {
 
 	useEffect(() => {
 		void Effect.runPromise(loadIdentityFromZend);
+		void Effect.runPromise(loadPeersFromZend);
 	}, []);
 
 	const navWidth = 22;
@@ -45,6 +47,8 @@ export function App() {
 	);
 	const mainWidth = terminalSize.width - navWidth - inspectWidth;
 	const contentHeight = terminalSize.height - 2; // Reserve header + footer
+	const mainContentWidth = Math.max(0, mainWidth - 2);
+	const mainContentHeight = Math.max(0, contentHeight - 2);
 
 	// Count active items for status
 	const activeTransfers = transfersState.transfers.filter(
@@ -55,15 +59,25 @@ export function App() {
 	const renderMainView = () => {
 		switch (activeSection) {
 			case "identity":
-				return <IdentityView width={mainWidth} height={contentHeight} />;
+				return (
+					<IdentityView width={mainContentWidth} height={mainContentHeight} />
+				);
 			case "peers":
-				return <PeersView width={mainWidth} height={contentHeight} />;
+				return (
+					<PeersView width={mainContentWidth} height={mainContentHeight} />
+				);
 			case "transfers":
-				return <TransfersView width={mainWidth} height={contentHeight} />;
+				return (
+					<TransfersView width={mainContentWidth} height={mainContentHeight} />
+				);
 			case "receive":
-				return <ReceiveView width={mainWidth} height={contentHeight} />;
+				return (
+					<ReceiveView width={mainContentWidth} height={mainContentHeight} />
+				);
 			case "files":
-				return <FilesView width={mainWidth} height={contentHeight} />;
+				return (
+					<FilesView width={mainContentWidth} height={mainContentHeight} />
+				);
 			default:
 				return null;
 		}

@@ -82,7 +82,7 @@ export function InspectPane({ width, height }: Props) {
 										: ui.warning
 							}
 						>
-							{peer.trustLevel}
+							{peer.trustLevel === "blocked" ? "untrusted" : peer.trustLevel}
 						</text>
 					</>
 				);

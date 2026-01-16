@@ -206,7 +206,7 @@ export const identityCommands = [
 					? `~${filePath.slice(homeDir.length)}`
 					: filePath;
 				yield* showToast({
-					message: `Identity exported to ~/.config/hermes`,
+					message: `Identity exported to ${displayPath}`,
 					tone: "success",
 				});
 			}),
