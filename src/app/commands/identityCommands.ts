@@ -83,8 +83,9 @@ const exportIdentityToFile = (identity: {
 	Effect.tryPromise({
 		try: async () => {
 			const safeFingerprint = identity.fingerprint.replace(/[^a-zA-Z0-9]/g, "");
+			const configDir = join(homedir(), ".config", "hermes");
 			const filePath = join(
-				homedir(),
+				configDir,
 				`hermes-identity-${safeFingerprint}.json`,
 			);
 			const payload = {
@@ -92,7 +93,9 @@ const exportIdentityToFile = (identity: {
 				fingerprint: identity.fingerprint,
 				createdAt: identity.createdAt.toISOString(),
 			};
-			await Bun.write(filePath, JSON.stringify(payload, null, 2));
+			await Bun.write(filePath, JSON.stringify(payload, null, 2), {
+				createPath: true,
+			});
 			return filePath;
 		},
 		catch: (error) =>
