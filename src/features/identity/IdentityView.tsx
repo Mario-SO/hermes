@@ -12,7 +12,7 @@ function formatFingerprint(fp: string): string {
 
 export function IdentityView({ width, height }: Props) {
 	const ui = useTheme().ui;
-	const { identity, isLoading, error } = useIdentityState();
+	const { identity, isLoading, error, notice } = useIdentityState();
 
 	if (isLoading) {
 		return (
@@ -133,7 +133,17 @@ export function IdentityView({ width, height }: Props) {
 				</box>
 			</box>
 
-			<box style={{ height: 2 }} />
+			{notice ? (
+				<>
+					<box style={{ height: 1 }} />
+					<text fg={notice.tone === "error" ? ui.error : ui.success}>
+						{notice.message}
+					</text>
+					<box style={{ height: 1 }} />
+				</>
+			) : (
+				<box style={{ height: 2 }} />
+			)}
 			<box style={{ flexDirection: "row" }}>
 				<text fg={ui.foregroundDim}>Press </text>
 				<text fg={ui.accent}>c</text>

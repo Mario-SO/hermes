@@ -5,6 +5,7 @@ import {
 	setIdentity,
 	setIdentityError,
 	setIdentityLoading,
+	setIdentityNotice,
 } from "@features/identity/identityState";
 import { zend } from "@shared/ipc";
 import { Effect } from "effect";
@@ -62,6 +63,16 @@ const copyToClipboard = (text: string) =>
 		},
 		catch: (error) =>
 			error instanceof Error ? error : new Error(String(error)),
+	});
+
+const showIdentityNotice = (notice: {
+	message: string;
+	tone: "success" | "error";
+}) =>
+	Effect.gen(function* () {
+		yield* setIdentityNotice(notice);
+		yield* Effect.sleep("2 seconds");
+		yield* setIdentityNotice(null);
 	});
 
 const exportIdentityToFile = (identity: {
@@ -137,19 +148,24 @@ export const identityCommands = [
 			Effect.gen(function* () {
 				const identity = getIdentityState().identity;
 				if (!identity) {
-					yield* setIdentityError("No identity available to copy.");
+					yield* showIdentityNotice({
+						message: "No identity available to copy.",
+						tone: "error",
+					});
 					return;
 				}
 
-				yield* copyToClipboard(identity.fingerprint).pipe(
-					Effect.catchAll((error) =>
-						Effect.gen(function* () {
-							const message =
-								error instanceof Error ? error.message : JSON.stringify(error);
-							yield* setIdentityError(message);
-						}),
-					),
-				);
+				try {
+					yield* copyToClipboard(identity.fingerprint);
+					yield* showIdentityNotice({
+						message: "Fingerprint copied to clipboard.",
+						tone: "success",
+					});
+				} catch (error) {
+					const message =
+						error instanceof Error ? error.message : JSON.stringify(error);
+					yield* showIdentityNotice({ message, tone: "error" });
+				}
 			}),
 	},
 	{

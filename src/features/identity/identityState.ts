@@ -11,12 +11,19 @@ export type IdentityState = {
 	identity: Identity | null;
 	isLoading: boolean;
 	error: string | null;
+	notice: IdentityNotice | null;
+};
+
+export type IdentityNotice = {
+	message: string;
+	tone: "success" | "error";
 };
 
 const initialState: IdentityState = {
 	identity: null,
 	isLoading: false,
 	error: null,
+	notice: null,
 };
 
 export const identityStateRef = createSubscriptionRef(initialState);
@@ -35,6 +42,7 @@ export const setIdentityLoading = (isLoading: boolean) =>
 			...state,
 			isLoading,
 			error: null,
+			notice: null,
 		}));
 	});
 
@@ -44,6 +52,7 @@ export const setIdentity = (identity: Identity) =>
 			identity,
 			isLoading: false,
 			error: null,
+			notice: null,
 		});
 	});
 
@@ -53,6 +62,15 @@ export const setIdentityError = (error: string) =>
 			...state,
 			isLoading: false,
 			error,
+			notice: null,
+		}));
+	});
+
+export const setIdentityNotice = (notice: IdentityNotice | null) =>
+	Effect.gen(function* () {
+		yield* SubscriptionRef.update(identityStateRef, (state) => ({
+			...state,
+			notice,
 		}));
 	});
 
