@@ -7,6 +7,7 @@ import {
 	setIdentityLoading,
 	setIdentityNotice,
 } from "@features/identity/identityState";
+import { showToast } from "@features/overlays/toastState";
 import { zend } from "@shared/ipc";
 import { Effect } from "effect";
 import type { CommandDefinition } from "./types";
@@ -188,15 +189,26 @@ export const identityCommands = [
 					return;
 				}
 
-				yield* exportIdentityToFile(identity).pipe(
+				const filePath = yield* exportIdentityToFile(identity).pipe(
 					Effect.catchAll((error) =>
 						Effect.gen(function* () {
 							const message =
 								error instanceof Error ? error.message : JSON.stringify(error);
 							yield* setIdentityError(message);
+							return null;
 						}),
 					),
 				);
+				if (!filePath) return;
+
+				const homeDir = homedir();
+				const displayPath = filePath.startsWith(homeDir)
+					? `~${filePath.slice(homeDir.length)}`
+					: filePath;
+				yield* showToast({
+					message: `Identity exported to ~/.config/hermes`,
+					tone: "success",
+				});
 			}),
 	},
 ] as const satisfies readonly CommandDefinition[];

@@ -10,6 +10,7 @@ import { InspectPane } from "@features/inspect/InspectPane";
 import { NavigationPane } from "@features/navigation/NavigationPane";
 import { useNavigationState } from "@features/navigation/navigationState";
 import { ModalHost } from "@features/overlays/ModalHost";
+import { ToastHost } from "@features/overlays/ToastHost";
 import { PeersView } from "@features/peers/PeersView";
 import { ReceiveView } from "@features/receive/ReceiveView";
 import { useReceiveState } from "@features/receive/receiveState";
@@ -168,6 +169,7 @@ export function App() {
 
 			{/* Modal overlay */}
 			<ModalHost />
+			<ToastHost />
 		</box>
 	);
 }
