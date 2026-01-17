@@ -108,7 +108,7 @@ export const identityCommands = [
 
 				try {
 					yield* writeToClipboard(identity.publicKey);
-					yield* showIdentityNotice({
+					yield* showToast({
 						message: "Public key copied to clipboard.",
 						tone: "success",
 					});

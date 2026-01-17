@@ -152,7 +152,7 @@ export function IdentityView({ width, height }: Props) {
 			<box style={{ flexDirection: "row" }}>
 				<text fg={ui.foregroundDim}>Press </text>
 				<text fg={ui.accent}>c</text>
-				<text fg={ui.foregroundDim}> to copy fingerprint</text>
+				<text fg={ui.foregroundDim}> to copy public key</text>
 			</box>
 			<box style={{ flexDirection: "row" }}>
 				<text fg={ui.foregroundDim}>Press </text>
