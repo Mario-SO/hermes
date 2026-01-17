@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 const ED25519_PUBLIC_KEY_BYTES = 32;
 
 export type ParsedPublicKey = {
@@ -17,6 +15,8 @@ export function parseEd25519PublicKey(
 	const decoded = Buffer.from(normalized, "base64");
 	if (decoded.length !== ED25519_PUBLIC_KEY_BYTES) return null;
 
-	const fingerprint = createHash("sha256").update(decoded).digest("hex");
+	const hasher = new Bun.CryptoHasher("sha256");
+	hasher.update(decoded);
+	const fingerprint = hasher.digest("hex");
 	return { normalized, fingerprint };
 }

@@ -1,6 +1,9 @@
 import { Effect } from "effect";
 
-const getClipboardWriteCommands = (): Array<{ cmd: string; args: string[] }> => {
+const getClipboardWriteCommands = (): Array<{
+	cmd: string;
+	args: string[];
+}> => {
 	switch (process.platform) {
 		case "darwin":
 			return [{ cmd: "pbcopy", args: [] }];
@@ -99,6 +102,5 @@ export const readFromClipboard = Effect.tryPromise({
 			lastError ?? new Error("No clipboard command available on this system.")
 		);
 	},
-	catch: (error) =>
-		error instanceof Error ? error : new Error(String(error)),
+	catch: (error) => (error instanceof Error ? error : new Error(String(error))),
 });

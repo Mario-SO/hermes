@@ -67,7 +67,11 @@ export const appCommands = [
 		id: "modal.nextField",
 		title: "Next Field",
 		keys: ["tab"],
-		layers: ["modal:add_peer", "modal:encryption_options", "modal:decrypt_file"],
+		layers: [
+			"modal:add_peer",
+			"modal:encryption_options",
+			"modal:decrypt_file",
+		],
 		run: (ctx) =>
 			Effect.sync(() => {
 				ctx.modal?.nextField();
@@ -77,7 +81,11 @@ export const appCommands = [
 		id: "modal.prevField",
 		title: "Previous Field",
 		keys: ["shift+tab"],
-		layers: ["modal:add_peer", "modal:encryption_options", "modal:decrypt_file"],
+		layers: [
+			"modal:add_peer",
+			"modal:encryption_options",
+			"modal:decrypt_file",
+		],
 		run: (ctx) =>
 			Effect.sync(() => {
 				ctx.modal?.prevField();

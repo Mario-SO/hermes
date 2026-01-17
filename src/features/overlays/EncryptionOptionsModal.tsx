@@ -61,7 +61,14 @@ export function EncryptionOptionsModal() {
 	}, [handleConfirm, handleCancel, handleNextField]);
 
 	const handleInputKey = useCallback(
-		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean; super?: boolean }) => {
+		(
+			key: InputKey & {
+				ctrl?: boolean;
+				meta?: boolean;
+				alt?: boolean;
+				super?: boolean;
+			},
+		) => {
 			if (!key.name) return;
 
 			// Handle paste: Cmd+V (meta or super), Ctrl+V, Ctrl+Shift+V, or Ctrl+Y (yank)

@@ -99,7 +99,14 @@ export function AddPeerModal() {
 	}, [handleConfirm, handleCancel, handleNextField, handlePrevField]);
 
 	const handleInputKey = useCallback(
-		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean; super?: boolean }) => {
+		(
+			key: InputKey & {
+				ctrl?: boolean;
+				meta?: boolean;
+				alt?: boolean;
+				super?: boolean;
+			},
+		) => {
 			if (!key.name) return;
 
 			// Handle paste: Cmd+V (meta or super), Ctrl+V, Ctrl+Shift+V, or Ctrl+Y (yank)

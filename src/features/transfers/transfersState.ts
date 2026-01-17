@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import {
 	createSubscriptionRef,
 	getSubscriptionValue,
@@ -5,8 +6,6 @@ import {
 } from "@shared/store";
 import type { Transfer } from "@shared/types";
 import { Effect, SubscriptionRef } from "effect";
-import { mkdir } from "node:fs/promises";
-import { join } from "node:path";
 
 export type TransfersState = {
 	transfers: Transfer[];
@@ -50,17 +49,13 @@ const serializeTransfer = (transfer: Transfer): PersistedTransfer => ({
 const deserializeTransfer = (transfer: PersistedTransfer): Transfer => ({
 	...transfer,
 	startedAt: new Date(transfer.startedAt),
-	completedAt: transfer.completedAt ? new Date(transfer.completedAt) : undefined,
+	completedAt: transfer.completedAt
+		? new Date(transfer.completedAt)
+		: undefined,
 });
 
 const persistTransfers = Effect.gen(function* () {
-	const storageDir = getTransfersStorageDir();
 	const storagePath = getTransfersStoragePath();
-
-	yield* Effect.tryPromise({
-		try: () => mkdir(storageDir, { recursive: true }),
-		catch: () => undefined,
-	});
 
 	const state = yield* SubscriptionRef.get(transfersStateRef);
 	const payload: PersistedTransfersState = {
@@ -70,7 +65,9 @@ const persistTransfers = Effect.gen(function* () {
 
 	yield* Effect.tryPromise({
 		try: () =>
-			Bun.write(storagePath, `${JSON.stringify(payload, null, 2)}\n`),
+			Bun.write(storagePath, `${JSON.stringify(payload, null, 2)}\n`, {
+				createPath: true,
+			}),
 		catch: () => undefined,
 	});
 });
@@ -250,10 +247,4 @@ export const selectPrevTransfer = Effect.gen(function* () {
 export function getSelectedTransfer(): Transfer | undefined {
 	const state = getTransfersState();
 	return state.transfers.find((t) => t.id === state.selectedTransferId);
-}
-
-export function getActiveTransfers(): Transfer[] {
-	return getTransfersState().transfers.filter(
-		(t) => t.status === "pending" || t.status === "in_progress",
-	);
 }

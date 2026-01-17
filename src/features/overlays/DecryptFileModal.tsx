@@ -1,4 +1,3 @@
-import { Buffer } from "node:buffer";
 import { join } from "node:path";
 import { setModalCommandHandlers } from "@app/commands/context";
 import { closeModal, useModalState } from "@features/overlays/modalState";
@@ -65,9 +64,6 @@ export function DecryptFileModal() {
 	const [password, setPassword] = useState("");
 
 	const handleConfirm = useCallback(() => {
-		// #region agent log
-		fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DecryptFileModal.tsx:handleConfirm',message:'Confirm handler called',data:{hasFileData:!!fileData},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,E'})}).catch(()=>{});
-		// #endregion
 		if (!fileData) return;
 
 		void Effect.runPromise(
@@ -122,25 +118,16 @@ export function DecryptFileModal() {
 	}, [fileData, mode, password]);
 
 	const handleCancel = useCallback(() => {
-		// #region agent log
-		fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DecryptFileModal.tsx:handleCancel',message:'Cancel handler called',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,E'})}).catch(()=>{});
-		// #endregion
 		Effect.runSync(closeModal);
 	}, []);
 
 	const handleToggleMode = useCallback(() => {
-		// #region agent log
-		fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DecryptFileModal.tsx:handleToggleMode',message:'Toggle mode handler called',data:{currentMode:mode},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-		// #endregion
 		setMode((current) =>
 			current === "device_key" ? "password" : "device_key",
 		);
 	}, []);
 
 	useEffect(() => {
-		// #region agent log
-		fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'DecryptFileModal.tsx:useEffect',message:'Setting modal command handlers',data:{hasConfirm:!!handleConfirm,hasCancel:!!handleCancel,hasToggle:!!handleToggleMode},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
-		// #endregion
 		setModalCommandHandlers({
 			confirm: handleConfirm,
 			cancel: handleCancel,
@@ -151,7 +138,14 @@ export function DecryptFileModal() {
 	}, [handleConfirm, handleCancel, handleToggleMode]);
 
 	const handleInputKey = useCallback(
-		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean; super?: boolean }) => {
+		(
+			key: InputKey & {
+				ctrl?: boolean;
+				meta?: boolean;
+				alt?: boolean;
+				super?: boolean;
+			},
+		) => {
 			if (!key.name) return;
 
 			// Handle paste: Cmd+V (meta or super), Ctrl+V, Ctrl+Shift+V, or Ctrl+Y (yank)
