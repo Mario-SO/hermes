@@ -1,4 +1,5 @@
 import { appCommands } from "./appCommands";
+import { filesCommands } from "./filesCommands";
 import { focusCommands } from "./focusCommands";
 import { identityCommands } from "./identityCommands";
 import { navigationCommands } from "./navigationCommands";
@@ -13,6 +14,7 @@ export const allCommands = [
 	...navigationCommands,
 	...identityCommands,
 	...peersCommands,
+	...filesCommands,
 	...transfersCommands,
 	...receiveCommands,
 ] as const satisfies readonly CommandDefinition[];

@@ -5,11 +5,23 @@ import {
 } from "@shared/store";
 import type { Transfer } from "@shared/types";
 import { Effect, SubscriptionRef } from "effect";
+import { mkdir } from "node:fs/promises";
+import { join } from "node:path";
 
 export type TransfersState = {
 	transfers: Transfer[];
 	selectedTransferId: string | null;
 	isLoading: boolean;
+};
+
+type PersistedTransfer = Omit<Transfer, "startedAt" | "completedAt"> & {
+	startedAt: string;
+	completedAt?: string;
+};
+
+type PersistedTransfersState = {
+	transfers: PersistedTransfer[];
+	selectedTransferId: string | null;
 };
 
 const initialState: TransfersState = {
@@ -19,6 +31,81 @@ const initialState: TransfersState = {
 };
 
 export const transfersStateRef = createSubscriptionRef(initialState);
+
+const getTransfersStorageDir = (): string => {
+	const home = process.env.HOME;
+	if (home) return join(home, ".config", "hermes");
+	return join(process.cwd(), ".config", "hermes");
+};
+
+const getTransfersStoragePath = (): string =>
+	join(getTransfersStorageDir(), "transfers.json");
+
+const serializeTransfer = (transfer: Transfer): PersistedTransfer => ({
+	...transfer,
+	startedAt: transfer.startedAt.toISOString(),
+	completedAt: transfer.completedAt?.toISOString(),
+});
+
+const deserializeTransfer = (transfer: PersistedTransfer): Transfer => ({
+	...transfer,
+	startedAt: new Date(transfer.startedAt),
+	completedAt: transfer.completedAt ? new Date(transfer.completedAt) : undefined,
+});
+
+const persistTransfers = Effect.gen(function* () {
+	const storageDir = getTransfersStorageDir();
+	const storagePath = getTransfersStoragePath();
+
+	yield* Effect.tryPromise({
+		try: () => mkdir(storageDir, { recursive: true }),
+		catch: () => undefined,
+	});
+
+	const state = yield* SubscriptionRef.get(transfersStateRef);
+	const payload: PersistedTransfersState = {
+		transfers: state.transfers.map(serializeTransfer),
+		selectedTransferId: state.selectedTransferId,
+	};
+
+	yield* Effect.tryPromise({
+		try: () =>
+			Bun.write(storagePath, `${JSON.stringify(payload, null, 2)}\n`),
+		catch: () => undefined,
+	});
+});
+
+export const loadTransfersFromDisk = Effect.gen(function* () {
+	const storagePath = getTransfersStoragePath();
+	const file = Bun.file(storagePath);
+	const exists = yield* Effect.tryPromise({
+		try: () => file.exists(),
+		catch: () => false,
+	});
+	if (!exists) return;
+
+	const contents = yield* Effect.tryPromise({
+		try: () => file.text(),
+		catch: () => "",
+	});
+	if (!contents.trim()) return;
+
+	const parsed = JSON.parse(contents) as PersistedTransfersState;
+	if (!parsed || !Array.isArray(parsed.transfers)) return;
+
+	const transfers = parsed.transfers.map(deserializeTransfer);
+	const selectedTransferId = transfers.some(
+		(t) => t.id === parsed.selectedTransferId,
+	)
+		? parsed.selectedTransferId
+		: (transfers[0]?.id ?? null);
+
+	yield* SubscriptionRef.set(transfersStateRef, {
+		...initialState,
+		transfers,
+		selectedTransferId,
+	});
+});
 
 export function useTransfersState(): TransfersState {
 	return useSubscriptionValue(transfersStateRef);
@@ -34,6 +121,7 @@ export const addTransfer = (transfer: Transfer) =>
 			...state,
 			transfers: [transfer, ...state.transfers],
 		}));
+		yield* persistTransfers;
 	});
 
 export const updateTransfer = (
@@ -47,6 +135,7 @@ export const updateTransfer = (
 				t.id === transferId ? { ...t, ...updates } : t,
 			),
 		}));
+		yield* persistTransfers;
 	});
 
 export const updateTransferProgress = (transferId: string, progress: number) =>
@@ -75,6 +164,7 @@ export const completeTransfer = (transferId: string, hash: string) =>
 					: t,
 			),
 		}));
+		yield* persistTransfers;
 	});
 
 export const failTransfer = (transferId: string, error: string) =>
@@ -92,6 +182,7 @@ export const failTransfer = (transferId: string, error: string) =>
 					: t,
 			),
 		}));
+		yield* persistTransfers;
 	});
 
 export const cancelTransfer = (transferId: string) =>
@@ -108,6 +199,7 @@ export const cancelTransfer = (transferId: string) =>
 					: t,
 			),
 		}));
+		yield* persistTransfers;
 	});
 
 export const selectTransfer = (transferId: string | null) =>

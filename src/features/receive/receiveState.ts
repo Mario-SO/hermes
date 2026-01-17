@@ -1,15 +1,5 @@
-import {
-	createSubscriptionRef,
-	getSubscriptionValue,
-	useSubscriptionValue,
-} from "@shared/store";
-import type { IncomingRequest, ReceiveStatus, Transfer } from "@shared/types";
-import {
-	BinaryExecutionError,
-	BinaryNotFoundError,
-	JsonParseError,
-	zend,
-} from "@shared/ipc";
+import { join } from "node:path";
+import { getPeersState } from "@features/peers/peersState";
 import {
 	addTransfer,
 	cancelTransfer,
@@ -18,7 +8,18 @@ import {
 	updateTransfer,
 	updateTransferProgress,
 } from "@features/transfers/transfersState";
-import { getPeersState } from "@features/peers/peersState";
+import {
+	BinaryExecutionError,
+	BinaryNotFoundError,
+	JsonParseError,
+	zend,
+} from "@shared/ipc";
+import {
+	createSubscriptionRef,
+	getSubscriptionValue,
+	useSubscriptionValue,
+} from "@shared/store";
+import type { IncomingRequest, ReceiveStatus, Transfer } from "@shared/types";
 import { Effect, Fiber, Stream, SubscriptionRef } from "effect";
 
 export type ReceiveState = {
@@ -33,7 +34,7 @@ const initialState: ReceiveState = {
 	status: "idle",
 	incomingRequests: [],
 	selectedRequestId: null,
-	defaultSavePath: process.cwd(),
+	defaultSavePath: "~/Downloads",
 	error: null,
 };
 
@@ -85,6 +86,12 @@ const beginReceiveTransfer = (
 	peerId: string | undefined,
 ) =>
 	Effect.gen(function* () {
+		const { defaultSavePath } = getReceiveState();
+		const resolvedPath =
+			fileName && fileName !== "Receiving file..."
+				? join(defaultSavePath, fileName)
+				: undefined;
+
 		const transferId = `transfer-${Date.now()}`;
 		activeReceiveTransferId = transferId;
 		activeReceivePeerId = resolvePeerId(peerId);
@@ -95,6 +102,7 @@ const beginReceiveTransfer = (
 			peerId: activeReceivePeerId ?? "unknown",
 			fileName,
 			fileSize,
+			filePath: resolvedPath,
 			progress: 0,
 			status: "in_progress",
 			startedAt: new Date(),
@@ -111,7 +119,11 @@ const beginReceiveTransfer = (
 const updateReceiveProgress = (bytes: number, percent: number) =>
 	Effect.gen(function* () {
 		if (!activeReceiveTransferId) {
-			yield* beginReceiveTransfer("Receiving file...", 0, activeReceivePeerId);
+			yield* beginReceiveTransfer(
+				"Receiving file...",
+				0,
+				activeReceivePeerId ?? undefined,
+			);
 		}
 
 		if (!activeReceiveTransferId) return;
@@ -131,13 +143,23 @@ const updateReceiveProgress = (bytes: number, percent: number) =>
 
 const completeReceiveTransfer = (fileName: string, hash: string) =>
 	Effect.gen(function* () {
+		const { defaultSavePath } = getReceiveState();
+		const resolvedPath = join(defaultSavePath, fileName);
+
 		if (!activeReceiveTransferId) {
-			yield* beginReceiveTransfer(fileName, 0, activeReceivePeerId);
+			yield* beginReceiveTransfer(
+				fileName,
+				0,
+				activeReceivePeerId ?? undefined,
+			);
 		}
 
 		if (!activeReceiveTransferId) return;
 
-		yield* updateTransfer(activeReceiveTransferId, { fileName });
+		yield* updateTransfer(activeReceiveTransferId, {
+			fileName,
+			filePath: resolvedPath,
+		});
 		yield* completeTransfer(activeReceiveTransferId, hash);
 		resetReceiveSession();
 		yield* SubscriptionRef.update(receiveStateRef, (state) => ({

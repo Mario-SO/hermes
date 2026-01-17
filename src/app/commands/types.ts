@@ -59,6 +59,7 @@ export type CommandLayerId =
 	| "modal:select_file"
 	| "modal:encryption_options"
 	| "modal:confirm_send"
+	| "modal:decrypt_file"
 	| "modal:receive_request"
 	| "modal:save_location"
 	| "modal:error";

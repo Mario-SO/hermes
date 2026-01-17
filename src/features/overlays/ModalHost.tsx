@@ -1,6 +1,7 @@
 import { useModalState } from "@features/overlays/modalState";
 import { AddPeerModal } from "./AddPeerModal";
 import { ConfirmSendModal } from "./ConfirmSendModal";
+import { DecryptFileModal } from "./DecryptFileModal";
 import { EncryptionOptionsModal } from "./EncryptionOptionsModal";
 import { ErrorModal } from "./ErrorModal";
 import { ReceiveRequestModal } from "./ReceiveRequestModal";
@@ -22,6 +23,8 @@ export function ModalHost() {
 			return <EncryptionOptionsModal />;
 		case "confirm_send":
 			return <ConfirmSendModal />;
+		case "decrypt_file":
+			return <DecryptFileModal />;
 		case "receive_request":
 			return <ReceiveRequestModal />;
 		case "save_location":

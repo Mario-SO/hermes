@@ -37,6 +37,7 @@ export const appCommands = [
 			"modal:select_file",
 			"modal:encryption_options",
 			"modal:confirm_send",
+			"modal:decrypt_file",
 			"modal:receive_request",
 			"modal:save_location",
 			"modal:error",
@@ -53,6 +54,7 @@ export const appCommands = [
 			"modal:select_file",
 			"modal:encryption_options",
 			"modal:confirm_send",
+			"modal:decrypt_file",
 			"modal:receive_request",
 			"modal:save_location",
 		],
@@ -65,7 +67,7 @@ export const appCommands = [
 		id: "modal.nextField",
 		title: "Next Field",
 		keys: ["tab"],
-		layers: ["modal:add_peer", "modal:encryption_options"],
+		layers: ["modal:add_peer", "modal:encryption_options", "modal:decrypt_file"],
 		run: (ctx) =>
 			Effect.sync(() => {
 				ctx.modal?.nextField();
@@ -75,7 +77,7 @@ export const appCommands = [
 		id: "modal.prevField",
 		title: "Previous Field",
 		keys: ["shift+tab"],
-		layers: ["modal:add_peer", "modal:encryption_options"],
+		layers: ["modal:add_peer", "modal:encryption_options", "modal:decrypt_file"],
 		run: (ctx) =>
 			Effect.sync(() => {
 				ctx.modal?.prevField();

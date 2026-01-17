@@ -8,63 +8,10 @@ import {
 	setIdentityNotice,
 } from "@features/identity/identityState";
 import { showToast } from "@features/overlays/toastState";
+import { writeToClipboard } from "@shared/clipboard";
 import { zend } from "@shared/ipc";
 import { Effect } from "effect";
 import type { CommandDefinition } from "./types";
-
-const getClipboardCommands = (): Array<{ cmd: string; args: string[] }> => {
-	switch (process.platform) {
-		case "darwin":
-			return [{ cmd: "pbcopy", args: [] }];
-		case "win32":
-			return [{ cmd: "clip", args: [] }];
-		default:
-			return [
-				{ cmd: "wl-copy", args: [] },
-				{ cmd: "xclip", args: ["-selection", "clipboard"] },
-			];
-	}
-};
-
-const copyToClipboard = (text: string) =>
-	Effect.tryPromise({
-		try: async () => {
-			const commands = getClipboardCommands();
-			let lastError: Error | null = null;
-
-			for (const { cmd, args } of commands) {
-				try {
-					const proc = Bun.spawn({
-						cmd: [cmd, ...args],
-						stdin: "pipe",
-						stdout: "ignore",
-						stderr: "pipe",
-					});
-
-					if (proc.stdin) {
-						proc.stdin.write(text);
-						proc.stdin.end();
-					}
-
-					const exitCode = await proc.exited;
-					if (exitCode === 0) {
-						return;
-					}
-
-					const stderr = await new Response(proc.stderr).text();
-					throw new Error(stderr.trim() || `Clipboard command failed: ${cmd}`);
-				} catch (error) {
-					lastError = error instanceof Error ? error : new Error(String(error));
-				}
-			}
-
-			throw (
-				lastError ?? new Error("No clipboard command available on this system.")
-			);
-		},
-		catch: (error) =>
-			error instanceof Error ? error : new Error(String(error)),
-	});
 
 const showIdentityNotice = (notice: {
 	message: string;
@@ -160,7 +107,7 @@ export const identityCommands = [
 				}
 
 				try {
-					yield* copyToClipboard(identity.fingerprint);
+					yield* writeToClipboard(identity.fingerprint);
 					yield* showIdentityNotice({
 						message: "Fingerprint copied to clipboard.",
 						tone: "success",

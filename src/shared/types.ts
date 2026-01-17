@@ -44,6 +44,7 @@ export type Transfer = {
 	peerId: string;
 	fileName: string;
 	fileSize: number;
+	filePath?: string;
 	progress: number;
 	status: TransferStatus;
 	hash?: string;
@@ -72,6 +73,7 @@ export type ModalType =
 	| "select_file"
 	| "encryption_options"
 	| "confirm_send"
+	| "decrypt_file"
 	| "receive_request"
 	| "save_location"
 	| "error";

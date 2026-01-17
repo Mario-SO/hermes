@@ -17,7 +17,10 @@ import { ReceiveView } from "@features/receive/ReceiveView";
 import { useReceiveState } from "@features/receive/receiveState";
 import { useTheme } from "@features/theme/themeState";
 import { TransfersView } from "@features/transfers/TransfersView";
-import { useTransfersState } from "@features/transfers/transfersState";
+import {
+	loadTransfersFromDisk,
+	useTransfersState,
+} from "@features/transfers/transfersState";
 import { useTerminalSize } from "@shared/hooks/useTerminalSize";
 import { Effect } from "effect";
 import { useEffect } from "react";
@@ -38,6 +41,7 @@ export function App() {
 	useEffect(() => {
 		void Effect.runPromise(loadIdentityFromZend);
 		void Effect.runPromise(loadPeersFromZend);
+		void Effect.runPromise(loadTransfersFromDisk);
 	}, []);
 
 	const navWidth = 22;

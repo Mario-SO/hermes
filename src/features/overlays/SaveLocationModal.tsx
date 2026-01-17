@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { setModalCommandHandlers } from "@app/commands/context";
 import { closeModal, useModalState } from "@features/overlays/modalState";
 import {
@@ -38,6 +39,7 @@ export function SaveLocationModal() {
 			peerId: request.peerId,
 			fileName: request.fileName,
 			fileSize: request.fileSize,
+			filePath: join(savePath, request.fileName),
 			progress: 0,
 			status: "pending",
 			startedAt: new Date(),
@@ -46,7 +48,7 @@ export function SaveLocationModal() {
 		Effect.runSync(addTransfer(transfer));
 		Effect.runSync(removeIncomingRequest(request.id));
 		Effect.runSync(closeModal);
-	}, [request]);
+	}, [request, savePath]);
 
 	const handleCancel = useCallback(() => {
 		Effect.runSync(closeModal);

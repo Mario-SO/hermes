@@ -6,6 +6,7 @@ import {
 } from "@features/overlays/modalState";
 import { useTheme } from "@features/theme/themeState";
 import { useKeyboard } from "@opentui/react";
+import { readFromClipboard } from "@shared/clipboard";
 import { ModalFrame } from "@shared/components/ModalFrame";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
 import { getPrintableKey, type InputKey } from "@shared/keyboard";
@@ -60,9 +61,24 @@ export function EncryptionOptionsModal() {
 	}, [handleConfirm, handleCancel, handleNextField]);
 
 	const handleInputKey = useCallback(
-		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
+		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean; super?: boolean }) => {
 			if (!key.name) return;
-			if (key.ctrl || key.meta || key.alt) return;
+
+			// Handle paste: Cmd+V (meta or super), Ctrl+V, Ctrl+Shift+V, or Ctrl+Y (yank)
+			const hasCommandModifier = key.meta || key.ctrl || key.super;
+			const isPasteShortcut =
+				(hasCommandModifier && key.name === "v") ||
+				(key.ctrl && key.name === "y");
+			if (isPasteShortcut) {
+				if (mode === "password") {
+					Effect.runPromise(readFromClipboard)
+						.then((text) => setPassword((current) => current + text))
+						.catch(() => {});
+				}
+				return;
+			}
+
+			if (key.ctrl || key.meta || key.alt || key.super) return;
 			if (key.name === "tab" || key.name === "return" || key.name === "escape")
 				return;
 			if (mode !== "password") return;

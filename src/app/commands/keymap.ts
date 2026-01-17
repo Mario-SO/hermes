@@ -73,6 +73,10 @@ const layerDefinitions: Array<Omit<KeymapLayer, "bindings">> = [
 		when: (ctx) => ctx.modalType === "confirm_send",
 	},
 	{
+		id: "modal:decrypt_file",
+		when: (ctx) => ctx.modalType === "decrypt_file",
+	},
+	{
 		id: "modal:encryption_options",
 		when: (ctx) => ctx.modalType === "encryption_options",
 	},
@@ -131,14 +135,23 @@ export function resolveKeyBinding(
 	ctx: CommandContext,
 ): KeyBinding | null {
 	const layers = getActiveLayers(ctx);
+	// #region agent log
+	fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keymap.ts:resolveKeyBinding',message:'Resolving key binding',data:{keyName:keyPress.name,modalType:ctx.modalType,activeLayers:layers.map(l=>l.id),layerBindingCounts:layers.map(l=>({id:l.id,count:l.bindings.length}))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,C,D'})}).catch(()=>{});
+	// #endregion
 	for (const layer of layers) {
 		for (const binding of layer.bindings) {
 			if (!matchesKeyPress(binding, keyPress)) continue;
 			const command = commandById.get(binding.commandId);
 			if (command?.when && !command.when(ctx)) continue;
+			// #region agent log
+			fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keymap.ts:resolveKeyBinding',message:'Binding matched',data:{keyName:keyPress.name,commandId:binding.commandId,layer:layer.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+			// #endregion
 			return binding;
 		}
 	}
+	// #region agent log
+	fetch('http://127.0.0.1:7244/ingest/a5a80ac1-dc74-4c8c-af6c-9f67359bf38f',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'keymap.ts:resolveKeyBinding',message:'No binding found',data:{keyName:keyPress.name,modalType:ctx.modalType},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+	// #endregion
 	return null;
 }
 

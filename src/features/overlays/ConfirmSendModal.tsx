@@ -45,6 +45,7 @@ export function ConfirmSendModal() {
 			peerId: peer.id,
 			fileName,
 			fileSize: 0, // Will be populated by IPC
+			filePath: sendData.filePath,
 			progress: 0,
 			status: "pending",
 			startedAt: new Date(),

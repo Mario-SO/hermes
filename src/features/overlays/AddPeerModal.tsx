@@ -6,6 +6,7 @@ import {
 } from "@features/overlays/modalState";
 import { useTheme } from "@features/theme/themeState";
 import { useKeyboard } from "@opentui/react";
+import { readFromClipboard } from "@shared/clipboard";
 import { ModalFrame } from "@shared/components/ModalFrame";
 import { parseEd25519PublicKey } from "@shared/crypto";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
@@ -98,9 +99,30 @@ export function AddPeerModal() {
 	}, [handleConfirm, handleCancel, handleNextField, handlePrevField]);
 
 	const handleInputKey = useCallback(
-		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean }) => {
+		(key: InputKey & { ctrl?: boolean; meta?: boolean; alt?: boolean; super?: boolean }) => {
 			if (!key.name) return;
-			if (key.ctrl || key.meta || key.alt) return;
+
+			// Handle paste: Cmd+V (meta or super), Ctrl+V, Ctrl+Shift+V, or Ctrl+Y (yank)
+			const hasCommandModifier = key.meta || key.ctrl || key.super;
+			const isPasteShortcut =
+				(hasCommandModifier && key.name === "v") ||
+				(key.ctrl && key.name === "y");
+			if (isPasteShortcut) {
+				Effect.runPromise(readFromClipboard)
+					.then((text) => {
+						if (focusedField === "name") {
+							setName((current) => current + text);
+						} else if (focusedField === "address") {
+							setAddress((current) => current + text);
+						} else {
+							setPublicKey((current) => current + text);
+						}
+					})
+					.catch(() => {});
+				return;
+			}
+
+			if (key.ctrl || key.meta || key.alt || key.super) return;
 			if (key.name === "tab" || key.name === "return" || key.name === "escape")
 				return;
 
