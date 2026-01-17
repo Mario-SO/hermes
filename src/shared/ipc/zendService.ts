@@ -18,7 +18,6 @@ import {
 	type BinaryNotFoundError,
 	type IpcEvent,
 	type JsonParseError,
-	type ZendCommand,
 	type ZendEvent,
 	type ZendIdentityCreatedEvent,
 	type ZendIdentityLoadedEvent,
@@ -387,13 +386,6 @@ export const stopReceiving: Effect.Effect<ReceiveStatus, never> = Effect.sync(
 );
 
 /**
- * Check if currently receiving files.
- */
-export const isReceiving: Effect.Effect<boolean, never> = Effect.sync(
-	() => receiveProcess !== null,
-);
-
-/**
  * Create an event stream from the receive process.
  * Returns a stream of IPC events that can be processed by the UI.
  */
@@ -406,59 +398,3 @@ export const createEventStream = (): Stream.Stream<
 	}
 	return receiveProcess.events as Stream.Stream<IpcEvent, JsonParseError>;
 };
-
-/**
- * Get the current receive process (for advanced usage).
- */
-export const getReceiveProcess = (): ManagedProcess | null => receiveProcess;
-
-// =============================================================================
-// Command Router (for generic command handling)
-// =============================================================================
-
-type CommandResult =
-	| IdentityResult
-	| AddPeerResult
-	| PeerInfo[]
-	| { name: string }
-	| { name: string; trust: "trusted" | "blocked" }
-	| SendResult
-	| ReceiveStatus;
-
-/**
- * Execute a zend command.
- * Routes to the appropriate function based on command type.
- */
-export const sendCommand = (
-	command: ZendCommand,
-): Effect.Effect<CommandResult, ZendServiceError> =>
-	Effect.gen(function* () {
-		switch (command.command) {
-			case "id_init":
-				return yield* initIdentity;
-
-			case "id_show":
-				return yield* showIdentity;
-
-			case "peer_add":
-				return yield* addPeer(command.name, command.publicKey, command.address);
-
-			case "peer_remove":
-				return yield* removePeer(command.name);
-
-			case "peer_trust":
-				return yield* setPeerTrust(command.name, command.trust);
-
-			case "peer_list":
-				return yield* listPeers;
-
-			case "send":
-				return yield* sendFile(command.filePath, command.peerName);
-
-			case "receive_start":
-				return yield* startReceiving(command.port);
-
-			case "receive_stop":
-				return yield* stopReceiving;
-		}
-	});

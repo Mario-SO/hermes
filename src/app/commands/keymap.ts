@@ -26,12 +26,6 @@ export interface KeymapLayer {
 	when?: (ctx: CommandContext) => boolean;
 }
 
-export interface HelpBinding {
-	commandId: CommandId;
-	title: string;
-	keys: string[];
-}
-
 export interface KeyPress {
 	name?: string;
 	ctrl?: boolean;
@@ -144,49 +138,6 @@ export function resolveKeyBinding(
 		}
 	}
 	return null;
-}
-
-export function getActiveBindings(
-	ctx: CommandContext,
-	options?: { layerIds?: CommandLayerId[] },
-): HelpBinding[] {
-	const layers = getActiveLayers(ctx).filter((layer) =>
-		options?.layerIds ? options.layerIds.includes(layer.id) : true,
-	);
-	const bindings: HelpBinding[] = [];
-	const seen = new Map<CommandId, HelpBinding>();
-
-	for (const layer of layers) {
-		for (const binding of layer.bindings) {
-			const command = commandById.get(binding.commandId);
-			if (!command) continue;
-			if (command.when && !command.when(ctx)) continue;
-
-			const existing = seen.get(binding.commandId);
-			if (existing) {
-				if (!existing.keys.includes(binding.display)) {
-					existing.keys.push(binding.display);
-				}
-				continue;
-			}
-
-			const entry: HelpBinding = {
-				commandId: binding.commandId,
-				title: command.title,
-				keys: [binding.display],
-			};
-			seen.set(binding.commandId, entry);
-			bindings.push(entry);
-		}
-	}
-
-	return bindings;
-}
-
-export function formatHelpText(bindings: HelpBinding[]): string {
-	return bindings
-		.map((binding) => `${binding.keys.join("/")} ${binding.title}`)
-		.join(" | ");
 }
 
 function buildBindingsForLayer(layerId: CommandLayerId): KeyBinding[] {

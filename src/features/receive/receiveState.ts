@@ -34,7 +34,7 @@ const initialState: ReceiveState = {
 	status: "idle",
 	incomingRequests: [],
 	selectedRequestId: null,
-	defaultSavePath: "~/Downloads",
+	defaultSavePath: process.cwd(),
 	error: null,
 };
 

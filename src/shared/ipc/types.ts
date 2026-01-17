@@ -195,36 +195,6 @@ export type ZendEvent =
 export type IpcEvent = ZencEvent | ZendEvent;
 
 // =============================================================================
-// Command types (for routing in the services - not sent to binaries directly)
-// =============================================================================
-
-export type ZendCommand =
-	| { command: "id_init" }
-	| { command: "id_show" }
-	| { command: "peer_add"; name: string; publicKey: string; address: string }
-	| { command: "peer_remove"; name: string }
-	| { command: "peer_trust"; name: string; trust: "trusted" | "blocked" }
-	| { command: "peer_list" }
-	| { command: "send"; filePath: string; peerName: string }
-	| { command: "receive_start"; port?: number }
-	| { command: "receive_stop" };
-
-export type ZencCommand =
-	| { command: "keygen" }
-	| {
-			command: "encrypt";
-			filePath: string;
-			toPublicKey?: string;
-			password?: string;
-	  }
-	| {
-			command: "decrypt";
-			filePath: string;
-			secretKey?: string;
-			password?: string;
-	  };
-
-// =============================================================================
 // Error types for Effect
 // =============================================================================
 
