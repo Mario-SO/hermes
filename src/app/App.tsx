@@ -107,6 +107,9 @@ export function App() {
 				{receiveState.status === "listening" && (
 					<text fg={ui.success}>{" ● LISTENING "}</text>
 				)}
+				{receiveState.status === "receiving" && (
+					<text fg={ui.info}>{" ● RECEIVING "}</text>
+				)}
 				{activeTransfers > 0 && (
 					<text fg={ui.info}>{` ↑${activeTransfers} `}</text>
 				)}

@@ -99,6 +99,29 @@ export function ReceiveView({ width, height }: Props) {
 						</text>
 					</box>
 				</box>
+			) : status === "receiving" ? (
+				<box
+					style={{
+						borderStyle: "single",
+						borderColor: ui.info,
+						padding: 2,
+						width: Math.min(50, width - 4),
+					}}
+				>
+					<box style={{ flexDirection: "column" }}>
+						<text fg={ui.info}>● Receiving a file...</text>
+						<box style={{ height: 1 }} />
+						<text fg={ui.foregroundDim}>
+							Check Transfers for progress details.
+						</text>
+						<box style={{ height: 1 }} />
+						<box style={{ flexDirection: "row" }}>
+							<text fg={ui.foreground}>Press </text>
+							<text fg={ui.accent}>Esc</text>
+							<text fg={ui.foreground}> to stop listening.</text>
+						</box>
+					</box>
+				</box>
 			) : incomingRequests.length === 0 ? (
 				<box
 					style={{
@@ -180,6 +203,11 @@ export function ReceiveView({ width, height }: Props) {
 							<text fg={ui.foregroundDim}>{" Create identity"}</text>
 						</>
 					)}
+				</box>
+			) : status === "receiving" ? (
+				<box style={{ flexDirection: "row" }}>
+					<text fg={ui.accent}>Esc</text>
+					<text fg={ui.foregroundDim}>{" Stop"}</text>
 				</box>
 			) : (
 				<box style={{ flexDirection: "row" }}>

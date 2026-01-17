@@ -142,6 +142,16 @@ export function InspectPane({ width, height }: Props) {
 				}
 				const request = getSelectedRequest();
 				if (!request) {
+					if (receiveState.status === "receiving") {
+						return (
+							<>
+								<text fg={ui.info}>● Receiving</text>
+								<box style={{ height: 1 }} />
+								<text fg={ui.foregroundDim}>See Transfers for</text>
+								<text fg={ui.foregroundDim}>progress details.</text>
+							</>
+						);
+					}
 					return (
 						<>
 							<text fg={ui.success}>● Listening</text>
