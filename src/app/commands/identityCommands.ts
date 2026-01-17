@@ -88,7 +88,7 @@ export const identityCommands = [
 	},
 	{
 		id: "identity.copy",
-		title: "Copy Fingerprint",
+		title: "Copy Public Key",
 		keys: ["c"],
 		layers: ["section:identity"],
 		when: (ctx) =>
@@ -107,9 +107,9 @@ export const identityCommands = [
 				}
 
 				try {
-					yield* writeToClipboard(identity.fingerprint);
+					yield* writeToClipboard(identity.publicKey);
 					yield* showIdentityNotice({
-						message: "Fingerprint copied to clipboard.",
+						message: "Public key copied to clipboard.",
 						tone: "success",
 					});
 				} catch (error) {
