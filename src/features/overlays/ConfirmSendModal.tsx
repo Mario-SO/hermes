@@ -51,7 +51,7 @@ export function ConfirmSendModal() {
 			startedAt: new Date(),
 		};
 
-		Effect.runSync(addTransfer(transfer));
+		Effect.runPromise(addTransfer(transfer));
 		Effect.runSync(closeModal);
 
 		void Effect.runPromise(
