@@ -9,7 +9,6 @@ import { Effect, SubscriptionRef } from "effect";
 
 export type TransfersState = {
 	transfers: Transfer[];
-	selectedTransferId: string | null;
 	isLoading: boolean;
 };
 
@@ -20,12 +19,11 @@ type PersistedTransfer = Omit<Transfer, "startedAt" | "completedAt"> & {
 
 type PersistedTransfersState = {
 	transfers: PersistedTransfer[];
-	selectedTransferId: string | null;
+	selectedTransferId?: string | null;
 };
 
 const initialState: TransfersState = {
 	transfers: [],
-	selectedTransferId: null,
 	isLoading: false,
 };
 
@@ -60,7 +58,6 @@ const persistTransfers = Effect.gen(function* () {
 	const state = yield* SubscriptionRef.get(transfersStateRef);
 	const payload: PersistedTransfersState = {
 		transfers: state.transfers.map(serializeTransfer),
-		selectedTransferId: state.selectedTransferId,
 	};
 
 	yield* Effect.tryPromise({
@@ -91,16 +88,10 @@ export const loadTransfersFromDisk = Effect.gen(function* () {
 	if (!parsed || !Array.isArray(parsed.transfers)) return;
 
 	const transfers = parsed.transfers.map(deserializeTransfer);
-	const selectedTransferId = transfers.some(
-		(t) => t.id === parsed.selectedTransferId,
-	)
-		? parsed.selectedTransferId
-		: (transfers[0]?.id ?? null);
 
 	yield* SubscriptionRef.set(transfersStateRef, {
 		...initialState,
 		transfers,
-		selectedTransferId,
 	});
 });
 
@@ -198,53 +189,3 @@ export const cancelTransfer = (transferId: string) =>
 		}));
 		yield* persistTransfers;
 	});
-
-export const selectTransfer = (transferId: string | null) =>
-	Effect.gen(function* () {
-		yield* SubscriptionRef.update(transfersStateRef, (state) => ({
-			...state,
-			selectedTransferId: transferId,
-		}));
-	});
-
-export const selectNextTransfer = Effect.gen(function* () {
-	const state = yield* SubscriptionRef.get(transfersStateRef);
-	if (state.transfers.length === 0) return;
-
-	const currentIndex = state.transfers.findIndex(
-		(t) => t.id === state.selectedTransferId,
-	);
-	const nextIndex = (currentIndex + 1) % state.transfers.length;
-	const nextTransfer = state.transfers[nextIndex];
-
-	if (nextTransfer) {
-		yield* SubscriptionRef.set(transfersStateRef, {
-			...state,
-			selectedTransferId: nextTransfer.id,
-		});
-	}
-});
-
-export const selectPrevTransfer = Effect.gen(function* () {
-	const state = yield* SubscriptionRef.get(transfersStateRef);
-	if (state.transfers.length === 0) return;
-
-	const currentIndex = state.transfers.findIndex(
-		(t) => t.id === state.selectedTransferId,
-	);
-	const prevIndex =
-		currentIndex <= 0 ? state.transfers.length - 1 : currentIndex - 1;
-	const prevTransfer = state.transfers[prevIndex];
-
-	if (prevTransfer) {
-		yield* SubscriptionRef.set(transfersStateRef, {
-			...state,
-			selectedTransferId: prevTransfer.id,
-		});
-	}
-});
-
-export function getSelectedTransfer(): Transfer | undefined {
-	const state = getTransfersState();
-	return state.transfers.find((t) => t.id === state.selectedTransferId);
-}

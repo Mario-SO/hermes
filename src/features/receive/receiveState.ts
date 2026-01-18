@@ -25,7 +25,6 @@ import { Effect, Fiber, Stream, SubscriptionRef } from "effect";
 export type ReceiveState = {
 	status: ReceiveStatus;
 	incomingRequests: IncomingRequest[];
-	selectedRequestId: string | null;
 	defaultSavePath: string;
 	error: string | null;
 };
@@ -33,7 +32,6 @@ export type ReceiveState = {
 const initialState: ReceiveState = {
 	status: "idle",
 	incomingRequests: [],
-	selectedRequestId: null,
 	defaultSavePath: process.cwd(),
 	error: null,
 };
@@ -324,55 +322,8 @@ export const removeIncomingRequest = (requestId: string) =>
 			incomingRequests: state.incomingRequests.filter(
 				(r) => r.id !== requestId,
 			),
-			selectedRequestId:
-				state.selectedRequestId === requestId ? null : state.selectedRequestId,
 		}));
 	});
-
-export const selectRequest = (requestId: string | null) =>
-	Effect.gen(function* () {
-		yield* SubscriptionRef.update(receiveStateRef, (state) => ({
-			...state,
-			selectedRequestId: requestId,
-		}));
-	});
-
-export const selectNextRequest = Effect.gen(function* () {
-	const state = yield* SubscriptionRef.get(receiveStateRef);
-	if (state.incomingRequests.length === 0) return;
-
-	const currentIndex = state.incomingRequests.findIndex(
-		(r) => r.id === state.selectedRequestId,
-	);
-	const nextIndex = (currentIndex + 1) % state.incomingRequests.length;
-	const nextRequest = state.incomingRequests[nextIndex];
-
-	if (nextRequest) {
-		yield* SubscriptionRef.set(receiveStateRef, {
-			...state,
-			selectedRequestId: nextRequest.id,
-		});
-	}
-});
-
-export const selectPrevRequest = Effect.gen(function* () {
-	const state = yield* SubscriptionRef.get(receiveStateRef);
-	if (state.incomingRequests.length === 0) return;
-
-	const currentIndex = state.incomingRequests.findIndex(
-		(r) => r.id === state.selectedRequestId,
-	);
-	const prevIndex =
-		currentIndex <= 0 ? state.incomingRequests.length - 1 : currentIndex - 1;
-	const prevRequest = state.incomingRequests[prevIndex];
-
-	if (prevRequest) {
-		yield* SubscriptionRef.set(receiveStateRef, {
-			...state,
-			selectedRequestId: prevRequest.id,
-		});
-	}
-});
 
 export const setDefaultSavePath = (path: string) =>
 	Effect.gen(function* () {
@@ -390,11 +341,6 @@ export const setReceiveError = (error: string) =>
 			error,
 		}));
 	});
-
-export function getSelectedRequest(): IncomingRequest | undefined {
-	const state = getReceiveState();
-	return state.incomingRequests.find((r) => r.id === state.selectedRequestId);
-}
 
 export function isListening(): boolean {
 	return getReceiveState().status !== "idle";
