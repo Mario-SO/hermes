@@ -37,24 +37,10 @@ export const navigationCommands = [
 		run: () => navigateTo("peers"),
 	},
 	{
-		id: "nav.transfers",
-		title: "Go to Transfers",
+		id: "nav.activity",
+		title: "Go to Activity",
 		keys: ["3"],
 		layers: ["global"],
-		run: () => navigateTo("transfers"),
-	},
-	{
-		id: "nav.receive",
-		title: "Go to Receive",
-		keys: ["4"],
-		layers: ["global"],
-		run: () => navigateTo("receive"),
-	},
-	{
-		id: "nav.files",
-		title: "Go to Files",
-		keys: ["5"],
-		layers: ["global"],
-		run: () => navigateTo("files"),
+		run: () => navigateTo("activity"),
 	},
 ] as const satisfies readonly CommandDefinition[];

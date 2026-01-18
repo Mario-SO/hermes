@@ -1,5 +1,5 @@
 import { useCommandHandler } from "@app/keyboard";
-import { FilesView } from "@features/files/FilesView";
+import { ActivityView } from "@features/activity/ActivityView";
 import { useFocusState } from "@features/focus/focusState";
 import { IdentityView } from "@features/identity/IdentityView";
 import {
@@ -13,10 +13,8 @@ import { ModalHost } from "@features/overlays/ModalHost";
 import { ToastHost } from "@features/overlays/ToastHost";
 import { PeersView } from "@features/peers/PeersView";
 import { loadPeersFromZend } from "@features/peers/peersState";
-import { ReceiveView } from "@features/receive/ReceiveView";
 import { useReceiveState } from "@features/receive/receiveState";
 import { useTheme } from "@features/theme/themeState";
-import { TransfersView } from "@features/transfers/TransfersView";
 import {
 	loadTransfersFromDisk,
 	useTransfersState,
@@ -70,17 +68,9 @@ export function App() {
 				return (
 					<PeersView width={mainContentWidth} height={mainContentHeight} />
 				);
-			case "transfers":
+			case "activity":
 				return (
-					<TransfersView width={mainContentWidth} height={mainContentHeight} />
-				);
-			case "receive":
-				return (
-					<ReceiveView width={mainContentWidth} height={mainContentHeight} />
-				);
-			case "files":
-				return (
-					<FilesView width={mainContentWidth} height={mainContentHeight} />
+					<ActivityView width={mainContentWidth} height={mainContentHeight} />
 				);
 			default:
 				return null;

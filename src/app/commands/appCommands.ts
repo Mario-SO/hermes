@@ -38,7 +38,6 @@ export const appCommands = [
 			"modal:encryption_options",
 			"modal:confirm_send",
 			"modal:decrypt_file",
-			"modal:receive_request",
 			"modal:save_location",
 			"modal:error",
 		],
@@ -55,7 +54,6 @@ export const appCommands = [
 			"modal:encryption_options",
 			"modal:confirm_send",
 			"modal:decrypt_file",
-			"modal:receive_request",
 			"modal:save_location",
 		],
 		run: (ctx) =>

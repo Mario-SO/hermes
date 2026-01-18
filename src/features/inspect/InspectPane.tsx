@@ -1,13 +1,11 @@
+import { useActivityState } from "@features/activity/activityState";
 import { useFocusState } from "@features/focus/focusState";
 import { useIdentityState } from "@features/identity/identityState";
 import { useNavigationState } from "@features/navigation/navigationState";
 import { getSelectedPeer } from "@features/peers/peersState";
-import {
-	getSelectedRequest,
-	useReceiveState,
-} from "@features/receive/receiveState";
+import { useReceiveState } from "@features/receive/receiveState";
 import { useTheme } from "@features/theme/themeState";
-import { getSelectedTransfer } from "@features/transfers/transfersState";
+import { useTransfersState } from "@features/transfers/transfersState";
 
 type Props = {
 	width: number;
@@ -34,6 +32,8 @@ export function InspectPane({ width, height }: Props) {
 	const isFocused = focusedPane === "inspect";
 	const identityState = useIdentityState();
 	const receiveState = useReceiveState();
+	const transfersState = useTransfersState();
+	const activityState = useActivityState();
 
 	const renderContent = () => {
 		switch (activeSection) {
@@ -88,10 +88,66 @@ export function InspectPane({ width, height }: Props) {
 				);
 			}
 
-			case "transfers": {
-				const transfer = getSelectedTransfer();
+			case "activity": {
+				const selection = activityState.selected;
+				const hasItems =
+					receiveState.incomingRequests.length > 0 ||
+					transfersState.transfers.length > 0;
+
+				if (!selection) {
+					if (!hasItems && receiveState.status === "idle") {
+						return <text fg={ui.foregroundDim}>No activity yet</text>;
+					}
+					if (receiveState.status === "receiving") {
+						return (
+							<>
+								<text fg={ui.info}>● Receiving</text>
+								<box style={{ height: 1 }} />
+								<text fg={ui.foregroundDim}>Watching transfer</text>
+								<text fg={ui.foregroundDim}>progress...</text>
+							</>
+						);
+					}
+					if (receiveState.status === "listening") {
+						return (
+							<>
+								<text fg={ui.success}>● Listening</text>
+								<box style={{ height: 1 }} />
+								<text fg={ui.foregroundDim}>Waiting for</text>
+								<text fg={ui.foregroundDim}>incoming files...</text>
+							</>
+						);
+					}
+					return <text fg={ui.foregroundDim}>Select an item</text>;
+				}
+
+				if (selection.kind === "request") {
+					const request = receiveState.incomingRequests.find(
+						(item) => item.id === selection.id,
+					);
+					if (!request) {
+						return <text fg={ui.foregroundDim}>Request not found</text>;
+					}
+					return (
+						<>
+							<text fg={ui.foreground}>{request.fileName}</text>
+							<box style={{ height: 1 }} />
+							<text fg={ui.foregroundDim}>From:</text>
+							<text fg={ui.accent}>
+								{request.peerFingerprint.slice(0, 16)}...
+							</text>
+							<box style={{ height: 1 }} />
+							<text fg={ui.foregroundDim}>Size:</text>
+							<text fg={ui.foreground}>{formatBytes(request.fileSize)}</text>
+						</>
+					);
+				}
+
+				const transfer = transfersState.transfers.find(
+					(item) => item.id === selection.id,
+				);
 				if (!transfer) {
-					return <text fg={ui.foregroundDim}>No transfer selected</text>;
+					return <text fg={ui.foregroundDim}>Transfer not found</text>;
 				}
 				return (
 					<>
@@ -124,54 +180,6 @@ export function InspectPane({ width, height }: Props) {
 								</text>
 							</>
 						)}
-					</>
-				);
-			}
-
-			case "receive": {
-				if (receiveState.status === "idle") {
-					return (
-						<>
-							<text fg={ui.foregroundDim}>Not listening</text>
-							<box style={{ height: 1 }} />
-							<text fg={ui.foregroundDim}>Press </text>
-							<text fg={ui.accent}>r</text>
-							<text fg={ui.foregroundDim}> to start</text>
-						</>
-					);
-				}
-				const request = getSelectedRequest();
-				if (!request) {
-					if (receiveState.status === "receiving") {
-						return (
-							<>
-								<text fg={ui.info}>● Receiving</text>
-								<box style={{ height: 1 }} />
-								<text fg={ui.foregroundDim}>See Transfers for</text>
-								<text fg={ui.foregroundDim}>progress details.</text>
-							</>
-						);
-					}
-					return (
-						<>
-							<text fg={ui.success}>● Listening</text>
-							<box style={{ height: 1 }} />
-							<text fg={ui.foregroundDim}>Waiting for</text>
-							<text fg={ui.foregroundDim}>incoming files...</text>
-						</>
-					);
-				}
-				return (
-					<>
-						<text fg={ui.foreground}>{request.fileName}</text>
-						<box style={{ height: 1 }} />
-						<text fg={ui.foregroundDim}>From:</text>
-						<text fg={ui.accent}>
-							{request.peerFingerprint.slice(0, 16)}...
-						</text>
-						<box style={{ height: 1 }} />
-						<text fg={ui.foregroundDim}>Size:</text>
-						<text fg={ui.foreground}>{formatBytes(request.fileSize)}</text>
 					</>
 				);
 			}

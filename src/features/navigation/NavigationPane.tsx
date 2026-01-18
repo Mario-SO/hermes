@@ -12,9 +12,7 @@ type SectionItem = {
 const SECTIONS: SectionItem[] = [
 	{ id: "identity", label: "Identity", icon: "◈" },
 	{ id: "peers", label: "Peers", icon: "◎" },
-	{ id: "transfers", label: "Transfers", icon: "↑" },
-	{ id: "receive", label: "Receive", icon: "↓" },
-	{ id: "files", label: "Files", icon: "▤" },
+	{ id: "activity", label: "Activity", icon: "⇄" },
 ];
 
 type Props = {

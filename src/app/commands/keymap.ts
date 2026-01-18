@@ -59,10 +59,6 @@ const layerDefinitions: Array<Omit<KeymapLayer, "bindings">> = [
 		when: (ctx) => ctx.modalType === "save_location",
 	},
 	{
-		id: "modal:receive_request",
-		when: (ctx) => ctx.modalType === "receive_request",
-	},
-	{
 		id: "modal:confirm_send",
 		when: (ctx) => ctx.modalType === "confirm_send",
 	},
@@ -96,17 +92,8 @@ const layerDefinitions: Array<Omit<KeymapLayer, "bindings">> = [
 		when: (ctx) => ctx.modalType === "none" && ctx.activeSection === "peers",
 	},
 	{
-		id: "section:transfers",
-		when: (ctx) =>
-			ctx.modalType === "none" && ctx.activeSection === "transfers",
-	},
-	{
-		id: "section:receive",
-		when: (ctx) => ctx.modalType === "none" && ctx.activeSection === "receive",
-	},
-	{
-		id: "section:files",
-		when: (ctx) => ctx.modalType === "none" && ctx.activeSection === "files",
+		id: "section:activity",
+		when: (ctx) => ctx.modalType === "none" && ctx.activeSection === "activity",
 	},
 	// Global layer (lowest priority when no modal is open)
 	{

@@ -1,11 +1,9 @@
+import { activityCommands } from "./activityCommands";
 import { appCommands } from "./appCommands";
-import { filesCommands } from "./filesCommands";
 import { focusCommands } from "./focusCommands";
 import { identityCommands } from "./identityCommands";
 import { navigationCommands } from "./navigationCommands";
 import { peersCommands } from "./peersCommands";
-import { receiveCommands } from "./receiveCommands";
-import { transfersCommands } from "./transfersCommands";
 import type { CommandDefinition } from "./types";
 
 export const allCommands = [
@@ -14,9 +12,7 @@ export const allCommands = [
 	...navigationCommands,
 	...identityCommands,
 	...peersCommands,
-	...filesCommands,
-	...transfersCommands,
-	...receiveCommands,
+	...activityCommands,
 ] as const satisfies readonly CommandDefinition[];
 
 export type CommandId = (typeof allCommands)[number]["id"];

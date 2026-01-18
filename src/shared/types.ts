@@ -1,10 +1,5 @@
 // Navigation
-export type SectionId =
-	| "identity"
-	| "peers"
-	| "transfers"
-	| "receive"
-	| "files";
+export type SectionId = "identity" | "peers" | "activity";
 
 // Pane Focus
 export type FocusedPane = "navigation" | "main" | "inspect";
@@ -74,7 +69,6 @@ export type ModalType =
 	| "encryption_options"
 	| "confirm_send"
 	| "decrypt_file"
-	| "receive_request"
 	| "save_location"
 	| "error";
 

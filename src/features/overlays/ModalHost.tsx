@@ -4,7 +4,6 @@ import { ConfirmSendModal } from "./ConfirmSendModal";
 import { DecryptFileModal } from "./DecryptFileModal";
 import { EncryptionOptionsModal } from "./EncryptionOptionsModal";
 import { ErrorModal } from "./ErrorModal";
-import { ReceiveRequestModal } from "./ReceiveRequestModal";
 import { SaveLocationModal } from "./SaveLocationModal";
 import { SelectFileModal } from "./SelectFileModal";
 import { TrustPeerModal } from "./TrustPeerModal";
@@ -25,8 +24,6 @@ export function ModalHost() {
 			return <ConfirmSendModal />;
 		case "decrypt_file":
 			return <DecryptFileModal />;
-		case "receive_request":
-			return <ReceiveRequestModal />;
 		case "save_location":
 			return <SaveLocationModal />;
 		case "error":

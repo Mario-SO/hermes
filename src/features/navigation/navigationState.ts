@@ -32,13 +32,7 @@ export const navigateTo = (section: SectionId) =>
 		}));
 	});
 
-const SECTION_ORDER: SectionId[] = [
-	"identity",
-	"peers",
-	"transfers",
-	"receive",
-	"files",
-];
+const SECTION_ORDER: SectionId[] = ["identity", "peers", "activity"];
 
 export const navigateNext = Effect.gen(function* () {
 	const state = yield* SubscriptionRef.get(navigationStateRef);
