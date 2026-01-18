@@ -81,6 +81,7 @@ export function ConfirmSendModal() {
 						toPublicKey: peer.publicKey,
 					});
 					fileToSend = encrypted.encryptedPath;
+					yield* updateTransfer(transferId, { filePath: fileToSend });
 					yield* updateTransferProgress(transferId, 40);
 				}
 
@@ -94,6 +95,7 @@ export function ConfirmSendModal() {
 						password: sendData.password,
 					});
 					fileToSend = encrypted.encryptedPath;
+					yield* updateTransfer(transferId, { filePath: fileToSend });
 					yield* updateTransferProgress(transferId, 40);
 				}
 
