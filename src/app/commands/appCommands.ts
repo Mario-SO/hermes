@@ -22,10 +22,7 @@ export const appCommands = [
 		title: "Help",
 		keys: ["?"],
 		layers: ["global"],
-		run: () =>
-			Effect.sync(() => {
-				// TODO: Show help modal
-			}),
+		run: () => openModal("help"),
 	},
 	{
 		id: "modal.close",
@@ -34,6 +31,7 @@ export const appCommands = [
 		layers: [
 			"modal:add_peer",
 			"modal:trust_peer",
+			"modal:help",
 			"modal:select_file",
 			"modal:encryption_options",
 			"modal:confirm_send",
@@ -50,6 +48,7 @@ export const appCommands = [
 		layers: [
 			"modal:add_peer",
 			"modal:trust_peer",
+			"modal:help",
 			"modal:select_file",
 			"modal:encryption_options",
 			"modal:confirm_send",

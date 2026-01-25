@@ -79,6 +79,10 @@ const layerDefinitions: Array<Omit<KeymapLayer, "bindings">> = [
 		when: (ctx) => ctx.modalType === "trust_peer",
 	},
 	{
+		id: "modal:help",
+		when: (ctx) => ctx.modalType === "help",
+	},
+	{
 		id: "modal:add_peer",
 		when: (ctx) => ctx.modalType === "add_peer",
 	},

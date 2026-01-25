@@ -31,6 +31,7 @@ export type CommandLayerId =
 	| "section:activity"
 	| "modal:add_peer"
 	| "modal:trust_peer"
+	| "modal:help"
 	| "modal:select_file"
 	| "modal:encryption_options"
 	| "modal:confirm_send"

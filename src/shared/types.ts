@@ -65,6 +65,7 @@ export type ModalType =
 	| "none"
 	| "add_peer"
 	| "trust_peer"
+	| "help"
 	| "select_file"
 	| "encryption_options"
 	| "confirm_send"
