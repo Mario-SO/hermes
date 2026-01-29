@@ -1,15 +1,4 @@
-# hermes
+# ⚡ Hermes - P2P file sharing TUI
 
-To install dependencies:
+https://github.com/user-attachments/assets/17d39434-a2c1-47d4-a740-349adecaffde
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.4. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
