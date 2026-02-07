@@ -26,9 +26,9 @@ type HelpGroup = {
 };
 
 type HelpRow =
-	| { type: "header"; label: string }
-	| { type: "item"; key: string; label: string }
-	| { type: "ellipsis" };
+	| { id: string; type: "header"; label: string }
+	| { id: string; type: "item"; key: string; label: string }
+	| { id: string; type: "ellipsis" };
 
 const SECTION_LABELS: Record<string, string> = {
 	identity: "Identity",
@@ -113,26 +113,31 @@ export function HelpModal() {
 		const sectionLabel =
 			SECTION_LABELS[navigationState.activeSection] ??
 			navigationState.activeSection;
-		const sectionLayer = `section:${navigationState.activeSection}` as CommandLayerId;
+		const sectionLayer =
+			`section:${navigationState.activeSection}` as CommandLayerId;
 
+		const globalGroup: HelpGroup = { title: "Global", items: [] };
+		const sectionGroup: HelpGroup = { title: sectionLabel, items: [] };
+		const navigationGroup: HelpGroup = { title: "Navigation", items: [] };
+		const focusGroup: HelpGroup = { title: "Focus", items: [] };
 		const groups: HelpGroup[] = [
-			{ title: "Global", items: [] },
-			{ title: sectionLabel, items: [] },
-			{ title: "Navigation", items: [] },
-			{ title: "Focus", items: [] },
+			globalGroup,
+			sectionGroup,
+			navigationGroup,
+			focusGroup,
 		];
 
 		for (const item of itemsById.values()) {
 			item.keys = Array.from(item.keySet).sort((a, b) => a.localeCompare(b));
 			const isSection = item.layers.has(sectionLayer);
-			const group =
-				isSection
-					? groups[1]
-					: item.id.startsWith("nav.")
-						? groups[2]
-						: item.id.startsWith("focus.")
-							? groups[3]
-							: groups[0];
+			let group: HelpGroup = globalGroup;
+			if (isSection) {
+				group = sectionGroup;
+			} else if (item.id.startsWith("nav.")) {
+				group = navigationGroup;
+			} else if (item.id.startsWith("focus.")) {
+				group = focusGroup;
+			}
 			group.items.push(item);
 		}
 
@@ -143,9 +148,14 @@ export function HelpModal() {
 		const rows: HelpRow[] = [];
 		for (const group of groups) {
 			if (group.items.length === 0) continue;
-			rows.push({ type: "header", label: group.title });
+			rows.push({
+				id: `header:${group.title}`,
+				type: "header",
+				label: group.title,
+			});
 			for (const item of group.items) {
 				rows.push({
+					id: `item:${item.id}`,
 					type: "item",
 					key: item.keys.join(" / "),
 					label: item.title,
@@ -154,7 +164,12 @@ export function HelpModal() {
 		}
 
 		if (rows.length === 0) {
-			rows.push({ type: "item", key: "", label: "No shortcuts available." });
+			rows.push({
+				id: "item:no-shortcuts",
+				type: "item",
+				key: "",
+				label: "No shortcuts available.",
+			});
 		}
 
 		const keyWidth = rows.reduce((max, row) => {
@@ -170,7 +185,8 @@ export function HelpModal() {
 		receiveState.status,
 	]);
 
-	const paneLabel = PANE_LABELS[focusState.focusedPane] ?? focusState.focusedPane;
+	const paneLabel =
+		PANE_LABELS[focusState.focusedPane] ?? focusState.focusedPane;
 	const sectionLabel =
 		SECTION_LABELS[navigationState.activeSection] ??
 		navigationState.activeSection;
@@ -186,7 +202,10 @@ export function HelpModal() {
 	let displayRows = rows.slice(0, listMax);
 	if (rows.length > listMax && displayRows.length > 0) {
 		displayRows = displayRows.slice(0, listMax);
-		displayRows[displayRows.length - 1] = { type: "ellipsis" };
+		displayRows[displayRows.length - 1] = {
+			id: "ellipsis:truncated",
+			type: "ellipsis",
+		};
 	}
 
 	return (
@@ -195,17 +214,17 @@ export function HelpModal() {
 			<box style={{ height: 1 }} />
 
 			<box style={{ flexDirection: "column", flexGrow: 1 }}>
-				{displayRows.map((row, index) => {
+				{displayRows.map((row) => {
 					if (row.type === "header") {
 						return (
-							<text key={`header-${index}`} fg={ui.accent}>
+							<text key={row.id} fg={ui.accent}>
 								{row.label}
 							</text>
 						);
 					}
 					if (row.type === "ellipsis") {
 						return (
-							<text key={`ellipsis-${index}`} fg={ui.foregroundDim}>
+							<text key={row.id} fg={ui.foregroundDim}>
 								...
 							</text>
 						);
@@ -217,7 +236,7 @@ export function HelpModal() {
 					const actionLabel = clampMessage(row.label, actionWidth);
 
 					return (
-						<box key={`item-${index}`} style={{ flexDirection: "row" }}>
+						<box key={row.id} style={{ flexDirection: "row" }}>
 							<text fg={ui.foregroundDim}>{paddedKey}</text>
 							<text fg={ui.foreground}>{actionLabel}</text>
 						</box>
