@@ -1,7 +1,7 @@
 {
 	"name": "@tuis/hermes",
 	"description": "Hermes is a terminal UI for P2P file sharing",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"module": "index.ts",
 	"type": "module",
 	"private": true,
