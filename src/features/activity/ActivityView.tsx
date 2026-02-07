@@ -311,6 +311,8 @@ export function ActivityView({ width, height }: Props) {
 						<text fg={ui.foregroundDim}>{" Listen"}</text>
 					</>
 				)}
+				<text fg={ui.accent}>{"  o"}</text>
+				<text fg={ui.foregroundDim}>{" Save path"}</text>
 			</box>
 		</box>
 	);

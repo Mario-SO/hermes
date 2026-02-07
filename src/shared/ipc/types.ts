@@ -145,33 +145,6 @@ export type ZendTransferEvent =
 	| ZendProgressEvent
 	| ZendTransferCompleteEvent;
 
-// Receive events (incoming file requests)
-export type ZendIncomingRequestEvent = {
-	event: "incoming_request";
-	request_id: string;
-	peer: string;
-	peer_fingerprint: string;
-	file: string;
-	size: number;
-};
-
-export type ZendReceiveStartEvent = {
-	event: "receive_start";
-	transfer_id: string;
-};
-
-export type ZendReceiveCompleteEvent = {
-	event: "receive_complete";
-	file: string;
-	hash: string;
-	save_path: string;
-};
-
-export type ZendReceiveEvent =
-	| ZendIncomingRequestEvent
-	| ZendReceiveStartEvent
-	| ZendReceiveCompleteEvent;
-
 // Error event
 export type ZendErrorEvent = {
 	event: "error";
@@ -185,7 +158,6 @@ export type ZendEvent =
 	| ZendPeerEvent
 	| ZendConnectionEvent
 	| ZendTransferEvent
-	| ZendReceiveEvent
 	| ZendErrorEvent;
 
 // =============================================================================

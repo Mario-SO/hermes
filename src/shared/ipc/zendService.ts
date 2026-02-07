@@ -342,6 +342,7 @@ export interface ReceiveStatus {
  */
 export const startReceiving = (
 	port?: number,
+	outputDir?: string,
 ): Effect.Effect<ReceiveStatus, ZendServiceError> =>
 	Effect.gen(function* () {
 		// If already receiving, stop first
@@ -353,6 +354,9 @@ export const startReceiving = (
 		const args = ["receive"];
 		if (port !== undefined) {
 			args.push("--port", String(port));
+		}
+		if (outputDir && outputDir.trim().length > 0) {
+			args.push("--output-dir", outputDir);
 		}
 
 		const managed = yield* spawnLongRunning({

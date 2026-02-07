@@ -1,15 +1,18 @@
-import { join } from "node:path";
 import { setModalCommandHandlers } from "@app/commands/context";
 import { closeModal, useModalState } from "@features/overlays/modalState";
+import { showToast } from "@features/overlays/toastState";
 import {
 	getReceiveState,
-	removeIncomingRequest,
+	setDefaultSavePath,
+	startListening,
 } from "@features/receive/receiveState";
 import { useTheme } from "@features/theme/themeState";
-import { addTransfer } from "@features/transfers/transfersState";
+import { useKeyboard } from "@opentui/react";
+import { readFromClipboard } from "@shared/clipboard";
 import { ModalFrame } from "@shared/components/ModalFrame";
 import { useModalDimensions } from "@shared/hooks/useModalDimensions";
-import type { IncomingRequest, Transfer } from "@shared/types";
+import { getPrintableKey, type InputKey } from "@shared/keyboard";
+import type { IncomingRequest } from "@shared/types";
 import { Effect } from "effect";
 import { useCallback, useEffect, useState } from "react";
 
@@ -28,27 +31,39 @@ export function SaveLocationModal() {
 		maxHeightPercent: 0.4,
 	});
 
-	const [savePath, _setSavePath] = useState(defaultSavePath);
+	const [savePath, setSavePath] = useState(defaultSavePath);
 
 	const handleConfirm = useCallback(() => {
-		if (!request) return;
+		const nextPath = savePath.trim();
+		if (!nextPath) return;
 
-		const transfer: Transfer = {
-			id: `transfer-${Date.now()}`,
-			direction: "receive",
-			peerId: request.peerId,
-			fileName: request.fileName,
-			fileSize: request.fileSize,
-			filePath: join(savePath, request.fileName),
-			progress: 0,
-			status: "pending",
-			startedAt: new Date(),
-		};
+		void Effect.runPromise(
+			Effect.gen(function* () {
+				yield* setDefaultSavePath(nextPath);
 
-		Effect.runSync(addTransfer(transfer));
-		Effect.runSync(removeIncomingRequest(request.id));
-		Effect.runSync(closeModal);
-	}, [request, savePath]);
+				const { status } = getReceiveState();
+				if (status === "listening") {
+					yield* startListening;
+					yield* showToast({
+						tone: "success",
+						message: "Receive path updated and listener restarted.",
+					});
+				} else if (status === "receiving") {
+					yield* showToast({
+						tone: "warning",
+						message: "Path updated. Restart listener after current receive.",
+					});
+				} else {
+					yield* showToast({
+						tone: "success",
+						message: "Default receive path updated.",
+					});
+				}
+
+				yield* closeModal;
+			}),
+		);
+	}, [savePath]);
 
 	const handleCancel = useCallback(() => {
 		Effect.runSync(closeModal);
@@ -64,12 +79,49 @@ export function SaveLocationModal() {
 		return () => setModalCommandHandlers(null);
 	}, [handleConfirm, handleCancel]);
 
-	if (!request) return null;
+	const handleInputKey = useCallback(
+		(
+			key: InputKey & {
+				ctrl?: boolean;
+				meta?: boolean;
+				alt?: boolean;
+				super?: boolean;
+			},
+		) => {
+			if (!key.name) return;
+
+			const hasCommandModifier = key.meta || key.ctrl || key.super;
+			const isPasteShortcut =
+				(hasCommandModifier && key.name === "v") ||
+				(key.ctrl && key.name === "y");
+			if (isPasteShortcut) {
+				Effect.runPromise(readFromClipboard)
+					.then((text) => setSavePath((current) => current + text))
+					.catch(() => {});
+				return;
+			}
+
+			if (key.ctrl || key.meta || key.alt || key.super) return;
+			if (key.name === "tab" || key.name === "return" || key.name === "escape")
+				return;
+			if (key.name === "backspace") {
+				setSavePath((value) => value.slice(0, -1));
+				return;
+			}
+			const nextChar = getPrintableKey(key);
+			if (nextChar) setSavePath((value) => value + nextChar);
+		},
+		[],
+	);
+
+	useKeyboard(handleInputKey);
 
 	return (
-		<ModalFrame width={width} height={height} title="Save Location">
+		<ModalFrame width={width} height={height} title="Receive Save Path">
 			<text fg={ui.foregroundDim}>
-				Choose where to save: {request.fileName}
+				{request
+					? `Choose where to save: ${request.fileName}`
+					: "Choose the default folder for received files"}
 			</text>
 			<box style={{ height: 1 }} />
 

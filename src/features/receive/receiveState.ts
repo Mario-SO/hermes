@@ -162,7 +162,7 @@ const completeReceiveTransfer = (fileName: string, hash: string) =>
 		resetReceiveSession();
 		yield* SubscriptionRef.update(receiveStateRef, (state) => ({
 			...state,
-			status: "idle" as const,
+			status: "listening" as const,
 		}));
 	});
 
@@ -172,7 +172,11 @@ const failReceiveTransfer = (message: string) =>
 			yield* failTransfer(activeReceiveTransferId, message);
 		}
 		resetReceiveSession();
-		yield* setReceiveError(message);
+		yield* SubscriptionRef.update(receiveStateRef, (state) => ({
+			...state,
+			status: "listening" as const,
+			error: message,
+		}));
 	});
 
 const handleReceiveEvent = (event: { event: string; [key: string]: unknown }) =>
@@ -206,30 +210,6 @@ const handleReceiveEvent = (event: { event: string; [key: string]: unknown }) =>
 					String(event.file ?? "Unknown"),
 					String(event.hash ?? ""),
 				);
-				return;
-			case "incoming_request": {
-				const request: IncomingRequest = {
-					id: String(event.request_id ?? `req-${Date.now()}`),
-					peerId: resolvePeerId(event.peer as string | undefined),
-					peerFingerprint: String(event.peer_fingerprint ?? ""),
-					fileName: String(event.file ?? "Unknown"),
-					fileSize: Number(event.size ?? 0),
-					receivedAt: new Date(),
-				};
-				yield* addIncomingRequest(request);
-				return;
-			}
-			case "receive_start":
-				yield* SubscriptionRef.update(receiveStateRef, (state) => ({
-					...state,
-					status: "receiving" as const,
-				}));
-				return;
-			case "receive_complete":
-				yield* SubscriptionRef.update(receiveStateRef, (state) => ({
-					...state,
-					status: "idle" as const,
-				}));
 				return;
 			case "error":
 				yield* failReceiveTransfer(String(event.message ?? "Receive error"));
@@ -273,8 +253,9 @@ export function getReceiveState(): ReceiveState {
 export const startListening = Effect.gen(function* () {
 	stopReceiveStream();
 	resetReceiveSession();
+	const outputDir = getReceiveState().defaultSavePath;
 
-	const result = yield* zend.startReceiving().pipe(
+	const result = yield* zend.startReceiving(undefined, outputDir).pipe(
 		Effect.catchAll((error) =>
 			Effect.gen(function* () {
 				yield* setReceiveError(formatReceiveError(error));

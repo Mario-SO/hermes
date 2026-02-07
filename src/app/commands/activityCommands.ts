@@ -7,6 +7,7 @@ import {
 } from "@features/activity/activityState";
 import {
 	openDecryptFileModal,
+	openModal,
 	openSaveLocationModal,
 } from "@features/overlays/modalState";
 import { showToast } from "@features/overlays/toastState";
@@ -98,6 +99,15 @@ export const activityCommands = [
 		when: (ctx) =>
 			ctx.activeSection === "activity" && ctx.focusedPane === "main",
 		run: () => selectPrevActivityItem,
+	},
+	{
+		id: "activity.changeSavePath",
+		title: "Change Save Path",
+		keys: ["o"],
+		layers: ["section:activity"],
+		when: (ctx) =>
+			ctx.activeSection === "activity" && ctx.focusedPane === "main",
+		run: () => openModal("save_location"),
 	},
 	{
 		id: "activity.acceptRequest",
