@@ -8,9 +8,6 @@ on:
 permissions:
   contents: write
 
-env:
-  GITHUB_ORG: tui-company  # Update to your GitHub org
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -45,8 +42,8 @@ jobs:
       - name: Read engine versions
         id: engines
         run: |
-          echo "zenc=$(jq -r .zenc engine-versions.json)" >> $GITHUB_OUTPUT
-          echo "zend=$(jq -r .zend engine-versions.json)" >> $GITHUB_OUTPUT
+          echo "zenc=$(node -p 'require(\"./engine-versions.json\").zenc')" >> $GITHUB_OUTPUT
+          echo "zend=$(node -p 'require(\"./engine-versions.json\").zend')" >> $GITHUB_OUTPUT
 
       - name: Download zenc
         run: |
@@ -56,7 +53,7 @@ jobs:
             ARTIFACT="${ARTIFACT}.exe"
           fi
           curl -fsSL -o "bin/zenc${{ matrix.platform == 'windows' && '.exe' || '' }}" \
-            "https://github.com/${{ env.GITHUB_ORG }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/${ARTIFACT}"
+            "https://github.com/${{ github.repository_owner }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/${ARTIFACT}"
           chmod +x bin/zenc* 2>/dev/null || true
 
       - name: Download zend
@@ -66,16 +63,16 @@ jobs:
             ARTIFACT="${ARTIFACT}.exe"
           fi
           curl -fsSL -o "bin/zend${{ matrix.platform == 'windows' && '.exe' || '' }}" \
-            "https://github.com/${{ env.GITHUB_ORG }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/${ARTIFACT}"
+            "https://github.com/${{ github.repository_owner }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/${ARTIFACT}"
           chmod +x bin/zend* 2>/dev/null || true
 
       - name: Verify checksums
         run: |
           # Download checksums
           curl -fsSL -o zenc-checksums.txt \
-            "https://github.com/${{ env.GITHUB_ORG }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/SHA256SUMS"
+            "https://github.com/${{ github.repository_owner }}/zenc/releases/download/v${{ steps.engines.outputs.zenc }}/SHA256SUMS"
           curl -fsSL -o zend-checksums.txt \
-            "https://github.com/${{ env.GITHUB_ORG }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/SHA256SUMS"
+            "https://github.com/${{ github.repository_owner }}/zend/releases/download/v${{ steps.engines.outputs.zend }}/SHA256SUMS"
 
           # Verify zenc
           ZENC_ARTIFACT="zenc-${{ steps.engines.outputs.zenc }}-${{ matrix.platform }}-${{ matrix.arch }}"
@@ -83,7 +80,7 @@ jobs:
             ZENC_ARTIFACT="${ZENC_ARTIFACT}.exe"
           fi
           EXPECTED_ZENC=$(grep "${ZENC_ARTIFACT}" zenc-checksums.txt | awk '{print $1}')
-          ACTUAL_ZENC=$(sha256sum bin/zenc* | awk '{print $1}')
+          ACTUAL_ZENC=$(shasum -a 256 bin/zenc* | awk '{print $1}')
           if [[ "$EXPECTED_ZENC" != "$ACTUAL_ZENC" ]]; then
             echo "zenc checksum mismatch!"
             echo "Expected: $EXPECTED_ZENC"
@@ -98,7 +95,7 @@ jobs:
             ZEND_ARTIFACT="${ZEND_ARTIFACT}.exe"
           fi
           EXPECTED_ZEND=$(grep "${ZEND_ARTIFACT}" zend-checksums.txt | awk '{print $1}')
-          ACTUAL_ZEND=$(sha256sum bin/zend* | awk '{print $1}')
+          ACTUAL_ZEND=$(shasum -a 256 bin/zend* | awk '{print $1}')
           if [[ "$EXPECTED_ZEND" != "$ACTUAL_ZEND" ]]; then
             echo "zend checksum mismatch!"
             echo "Expected: $EXPECTED_ZEND"
@@ -125,7 +122,7 @@ jobs:
       - name: Generate checksum
         run: |
           cd dist
-          sha256sum *.tar.gz > SHA256SUMS
+          shasum -a 256 *.tar.gz > SHA256SUMS
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
