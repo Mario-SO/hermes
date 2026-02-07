@@ -42,8 +42,7 @@ jobs:
       - name: Read engine versions
         id: engines
         run: |
-          echo "zenc=$(node -p 'require(\"./engine-versions.json\").zenc')" >> $GITHUB_OUTPUT
-          echo "zend=$(node -p 'require(\"./engine-versions.json\").zend')" >> $GITHUB_OUTPUT
+          node -e "const versions = require('./engine-versions.json'); console.log('zenc=' + versions.zenc); console.log('zend=' + versions.zend);" >> $GITHUB_OUTPUT
 
       - name: Download zenc
         run: |
